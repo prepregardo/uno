@@ -52,20 +52,32 @@ interface DashboardData {
 }
 
 // ============ КОНСТАНТЫ ============
-const MARKET_TYPE_LABELS: Record<string, string> = {
+const MARKET_LABELS: Record<string, string> = {
   '1X2': 'Исход (1X2)',
   TOTAL: 'Тоталы',
   HANDICAP: 'Форы',
   BOTH_SCORE: 'Обе забьют',
   DOUBLE_CHANCE: 'Двойной шанс',
-  CORRECT_SCORE: 'Точный счёт',
-  OTHER: 'Прочие',
 };
 
-const MARGIN_COLORS = {
-  low: '#2d8a2d',
-  medium: '#c9a227',
-  high: '#b84444',
+const SPORT_ICONS: Record<string, string> = {
+  'Футбол': '⚽',
+  'Хоккей': '🏒',
+  'Баскетбол': '🏀',
+  'Теннис': '🎾',
+  'Волейбол': '🏐',
+  'Киберспорт': '🎮',
+  'Настольный теннис': '🏓',
+  'Гандбол': '🤾',
+  'ММА': '🥊',
+  'Бокс': '🥋',
+};
+
+const COLORS = {
+  low: '#22c55e',
+  medium: '#f59e0b',
+  high: '#ef4444',
+  blue: '#2563eb',
 };
 
 // ============ ДЕМО ДАННЫЕ ============
@@ -87,40 +99,16 @@ const DEMO_DATA: DashboardData = {
     { id: 10, name: 'Бокс', eventsCount: 23, marketsCount: 177, avgMargin: 8.2 },
   ],
   marginByType: [
-    { marketType: '1X2', avgMargin: 5.2, minMargin: 4.1, maxMargin: 6.8, sampleSize: 2847 },
-    { marketType: 'TOTAL', avgMargin: 4.8, minMargin: 3.9, maxMargin: 5.9, sampleSize: 3562 },
     { marketType: 'HANDICAP', avgMargin: 4.2, minMargin: 3.2, maxMargin: 5.4, sampleSize: 2891 },
+    { marketType: 'TOTAL', avgMargin: 4.8, minMargin: 3.9, maxMargin: 5.9, sampleSize: 3562 },
+    { marketType: '1X2', avgMargin: 5.2, minMargin: 4.1, maxMargin: 6.8, sampleSize: 2847 },
     { marketType: 'BOTH_SCORE', avgMargin: 6.5, minMargin: 5.2, maxMargin: 8.1, sampleSize: 1243 },
     { marketType: 'DOUBLE_CHANCE', avgMargin: 7.8, minMargin: 6.1, maxMargin: 9.5, sampleSize: 987 },
   ],
   recentSessions: [
-    {
-      id: 1,
-      started_at: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
-      status: 'completed',
-      sports_count: 10,
-      events_count: 2874,
-      markets_count: 18453,
-    },
-    {
-      id: 2,
-      started_at: new Date(Date.now() - 3600000).toISOString(),
-      completed_at: new Date(Date.now() - 3600000).toISOString(),
-      status: 'completed',
-      sports_count: 10,
-      events_count: 2756,
-      markets_count: 17987,
-    },
-    {
-      id: 3,
-      started_at: new Date(Date.now() - 7200000).toISOString(),
-      completed_at: new Date(Date.now() - 7200000).toISOString(),
-      status: 'completed',
-      sports_count: 10,
-      events_count: 2698,
-      markets_count: 17654,
-    },
+    { id: 1, started_at: new Date().toISOString(), completed_at: new Date().toISOString(), status: 'completed', sports_count: 10, events_count: 2874, markets_count: 18453 },
+    { id: 2, started_at: new Date(Date.now() - 3600000).toISOString(), completed_at: new Date(Date.now() - 3600000).toISOString(), status: 'completed', sports_count: 10, events_count: 2756, markets_count: 17987 },
+    { id: 3, started_at: new Date(Date.now() - 7200000).toISOString(), completed_at: new Date(Date.now() - 7200000).toISOString(), status: 'completed', sports_count: 10, events_count: 2698, markets_count: 17654 },
   ],
 };
 
@@ -129,10 +117,6 @@ function getMarginLevel(margin: number): 'low' | 'medium' | 'high' {
   if (margin < 5) return 'low';
   if (margin < 7) return 'medium';
   return 'high';
-}
-
-function getMarginColor(margin: number): string {
-  return MARGIN_COLORS[getMarginLevel(margin)];
 }
 
 function formatDate(dateString: string): string {
@@ -151,95 +135,6 @@ function formatShortDate(dateString: string): string {
   }
 }
 
-// ============ КОМПОНЕНТЫ ============
-
-function StatCard({ value, label }: { value: string | number; label: string }) {
-  return (
-    <div className="stat-card">
-      <span className="stat-value">{value}</span>
-      <span className="stat-label">{label}</span>
-    </div>
-  );
-}
-
-function MarginBar({ margin }: { margin: number }) {
-  const level = getMarginLevel(margin);
-  const width = Math.min(margin * 8, 100);
-
-  return (
-    <div className="margin-bar">
-      <div className={`margin-fill ${level}`} style={{ width: `${width}%` }} />
-      <span className="margin-value">{margin.toFixed(1)}%</span>
-    </div>
-  );
-}
-
-function MarginChart({ data }: { data: MarginData[] }) {
-  return (
-    <div style={{ height: 300, marginTop: 20 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} layout="vertical" margin={{ left: 100 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#ccc" />
-          <XAxis
-            type="number"
-            domain={[0, 12]}
-            tickFormatter={(v) => `${v}%`}
-            tick={{ fontSize: 12 }}
-          />
-          <YAxis
-            type="category"
-            dataKey="marketType"
-            tick={{ fontSize: 12 }}
-            tickFormatter={(v) => MARKET_TYPE_LABELS[v] || v}
-            width={90}
-          />
-          <Tooltip
-            formatter={(value: number) => [`${value.toFixed(2)}%`, 'Маржа']}
-            labelFormatter={(label) => MARKET_TYPE_LABELS[label] || label}
-          />
-          <Bar dataKey="avgMargin" radius={[0, 4, 4, 0]}>
-            {data.map((entry, index) => (
-              <Cell key={index} fill={getMarginColor(entry.avgMargin)} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function SportCard({ sport }: { sport: Sport }) {
-  const level = getMarginLevel(sport.avgMargin);
-  return (
-    <div className="sport-card">
-      <div className="sport-name">{sport.name}</div>
-      <div className="sport-stats">
-        <span>{sport.eventsCount} событий</span>
-        <span>{sport.marketsCount} рынков</span>
-        <span className={level}>{sport.avgMargin.toFixed(1)}%</span>
-      </div>
-    </div>
-  );
-}
-
-function SessionRow({ session }: { session: Session }) {
-  return (
-    <tr>
-      <td>{formatShortDate(session.started_at)}</td>
-      <td>
-        <span className={`session-status ${session.status}`}>
-          {session.status === 'completed' && '✓ Завершено'}
-          {session.status === 'running' && '⟳ В процессе'}
-          {session.status === 'failed' && '✗ Ошибка'}
-        </span>
-      </td>
-      <td>{session.sports_count}</td>
-      <td>{session.events_count.toLocaleString()}</td>
-      <td>{session.markets_count.toLocaleString()}</td>
-    </tr>
-  );
-}
-
 // ============ ГЛАВНЫЙ КОМПОНЕНТ ============
 export default function HomePage() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -256,7 +151,6 @@ export default function HomePage() {
     try {
       const res = await fetch('/api/dashboard');
       if (!res.ok) throw new Error('API error');
-
       const result = await res.json();
 
       if (!result.totalSports || result.totalSports === 0) {
@@ -276,9 +170,10 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="wireframe-container">
-        <div className="wireframe-block" data-block="loading">
-          <p style={{ textAlign: 'center', padding: 40 }}>Загрузка данных...</p>
+      <div className="container">
+        <div className="loading">
+          <div className="loading-spinner" />
+          <p>Загрузка данных...</p>
         </div>
       </div>
     );
@@ -286,231 +181,271 @@ export default function HomePage() {
 
   if (!data) return null;
 
-  const avgMargin =
-    data.marginByType.length > 0
-      ? data.marginByType.reduce((sum, m) => sum + m.avgMargin, 0) / data.marginByType.length
-      : 0;
+  const avgMargin = data.marginByType.length > 0
+    ? data.marginByType.reduce((sum, m) => sum + m.avgMargin, 0) / data.marginByType.length
+    : 0;
 
   return (
-    <div className="wireframe-container">
+    <div className="container">
       {/* Hero */}
-      <div className="wireframe-block" data-block="hero">
-        <div className="hero">
-          <div className="hero-logo">
-            <span style={{ fontSize: 32 }}>W</span>
-            <br />
-            Winline
+      <section className="hero">
+        <div className="hero-content">
+          <h1>Winline</h1>
+          <p className="subtitle">Автоматизированный анализ букмекерской конторы</p>
+          <div className="hero-rating">
+            ★★★★<span>★</span>
+            <span style={{ fontSize: '20px', marginLeft: '8px' }}>4.2 / 5</span>
           </div>
-          <div className="hero-content">
-            <h1>Обзор Winline</h1>
-            <p>Автоматизированный анализ букмекерской конторы</p>
-            <div className="hero-rating">★★★★☆ 4.2/5</div>
-            <a
-              href="https://winline.ru"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hero-cta"
-            >
-              Перейти на сайт →
-            </a>
-          </div>
+          <a href="https://winline.ru" target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+            Перейти на сайт
+          </a>
         </div>
-      </div>
+      </section>
 
-      {/* Метаданные */}
+      {/* Last Update */}
       <div className="last-update">
-        {isDemo && (
-          <span style={{ color: MARGIN_COLORS.medium, marginRight: 10 }}>
-            [Демо-данные]
-          </span>
-        )}
+        {isDemo && <span className="demo-badge">Демо-данные</span>}
         Обновлено: {formatDate(data.lastUpdate)}
       </div>
 
-      {/* Статистика */}
-      <div className="wireframe-block" data-block="stats">
-        <h2>Статистика линии</h2>
-        <div className="stats-grid">
-          <StatCard value={data.totalSports} label="Видов спорта" />
-          <StatCard value={data.totalEvents.toLocaleString()} label="Событий" />
-          <StatCard value={data.totalMarkets.toLocaleString()} label="Рынков" />
-          <StatCard value={`${avgMargin.toFixed(1)}%`} label="Средняя маржа" />
+      {/* Stats */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-icon">🏆</div>
+          <span className="stat-value">{data.totalSports}</span>
+          <span className="stat-label">Видов спорта</span>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon">📊</div>
+          <span className="stat-value">{data.totalEvents.toLocaleString()}</span>
+          <span className="stat-label">Событий</span>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon">🎯</div>
+          <span className="stat-value">{data.totalMarkets.toLocaleString()}</span>
+          <span className="stat-label">Рынков</span>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon">📈</div>
+          <span className="stat-value">{avgMargin.toFixed(1)}%</span>
+          <span className="stat-label">Средняя маржа</span>
         </div>
       </div>
 
-      {/* Анализ маржи */}
-      <div className="wireframe-block" data-block="margin">
+      {/* Margin Analysis */}
+      <div className="card">
         <h2>Анализ маржи по типам ставок</h2>
 
-        <table className="wireframe-table">
-          <thead>
-            <tr>
-              <th>Тип рынка</th>
-              <th>Средняя</th>
-              <th>Мин.</th>
-              <th>Макс.</th>
-              <th style={{ width: '30%' }}>Визуализация</th>
-              <th>Выборка</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.marginByType.map((item) => (
-              <tr key={item.marketType}>
-                <td>
-                  <strong>{MARKET_TYPE_LABELS[item.marketType] || item.marketType}</strong>
-                </td>
-                <td>{item.avgMargin.toFixed(2)}%</td>
-                <td>{item.minMargin?.toFixed(1) || '—'}%</td>
-                <td>{item.maxMargin?.toFixed(1) || '—'}%</td>
-                <td>
-                  <MarginBar margin={item.avgMargin} />
-                </td>
-                <td>{item.sampleSize.toLocaleString()}</td>
+        <div className="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Тип рынка</th>
+                <th>Средняя</th>
+                <th>Мин.</th>
+                <th>Макс.</th>
+                <th style={{ width: '30%' }}>Визуализация</th>
+                <th>Выборка</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.marginByType.map((item) => {
+                const level = getMarginLevel(item.avgMargin);
+                return (
+                  <tr key={item.marketType}>
+                    <td><strong>{MARKET_LABELS[item.marketType] || item.marketType}</strong></td>
+                    <td>{item.avgMargin.toFixed(2)}%</td>
+                    <td>{item.minMargin?.toFixed(1) || '—'}%</td>
+                    <td>{item.maxMargin?.toFixed(1) || '—'}%</td>
+                    <td>
+                      <div className="margin-bar">
+                        <div
+                          className={`margin-fill ${level}`}
+                          style={{ width: `${Math.min(item.avgMargin * 8, 100)}%` }}
+                        />
+                        <span className="margin-value">{item.avgMargin.toFixed(1)}%</span>
+                      </div>
+                    </td>
+                    <td>{item.sampleSize.toLocaleString()}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
-        <MarginChart data={data.marginByType} />
+        <div className="chart-container">
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data.marginByType} layout="vertical" margin={{ left: 80, right: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                type="number"
+                domain={[0, 10]}
+                tickFormatter={(v) => `${v}%`}
+                tick={{ fontSize: 12, fill: '#6b7280' }}
+              />
+              <YAxis
+                type="category"
+                dataKey="marketType"
+                tick={{ fontSize: 13, fill: '#374151' }}
+                tickFormatter={(v) => MARKET_LABELS[v] || v}
+                width={75}
+              />
+              <Tooltip
+                formatter={(value: number) => [`${value.toFixed(2)}%`, 'Маржа']}
+                labelFormatter={(label) => MARKET_LABELS[label] || label}
+                contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb' }}
+              />
+              <Bar dataKey="avgMargin" radius={[0, 6, 6, 0]}>
+                {data.marginByType.map((entry, index) => (
+                  <Cell key={index} fill={COLORS[getMarginLevel(entry.avgMargin)]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
 
-        <div
-          style={{
-            marginTop: 15,
-            padding: 10,
-            background: '#f9f9f9',
-            border: '1px solid #ddd',
-            fontSize: 12,
-          }}
-        >
-          <strong>Легенда:</strong>
-          <span style={{ color: MARGIN_COLORS.low, marginLeft: 15 }}>■ Низкая (&lt;5%)</span>
-          <span style={{ color: MARGIN_COLORS.medium, marginLeft: 15 }}>■ Средняя (5-7%)</span>
-          <span style={{ color: MARGIN_COLORS.high, marginLeft: 15 }}>■ Высокая (&gt;7%)</span>
+        <div className="legend">
+          <div className="legend-item">
+            <div className="legend-dot low" />
+            <span>Низкая (&lt;5%)</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-dot medium" />
+            <span>Средняя (5-7%)</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-dot high" />
+            <span>Высокая (&gt;7%)</span>
+          </div>
         </div>
       </div>
 
-      {/* Плюсы и минусы */}
-      <div className="wireframe-block" data-block="pros-cons">
-        <h2>Плюсы и минусы</h2>
-        <div className="pros-cons">
-          <div>
+      {/* Pros & Cons */}
+      <div className="card">
+        <h2>Преимущества и недостатки</h2>
+        <div className="pros-cons-grid">
+          <div className="pros-card">
             <h3>Преимущества</h3>
-            <ul className="pros-list">
-              <li>Широкая линия ({data.totalSports} видов спорта)</li>
-              <li>Большой выбор рынков ({data.totalMarkets.toLocaleString()}+)</li>
-              <li>Низкая маржа на форы ({data.marginByType.find(m => m.marketType === 'HANDICAP')?.avgMargin.toFixed(1) || '4.2'}%)</li>
+            <ul className="feature-list">
+              <li>Широкая линия — {data.totalSports} видов спорта</li>
+              <li>Большой выбор рынков — {data.totalMarkets.toLocaleString()}+</li>
+              <li>Низкая маржа на форы — {data.marginByType.find(m => m.marketType === 'HANDICAP')?.avgMargin.toFixed(1) || '4.2'}%</li>
               <li>Лицензия ФНС России</li>
-              <li>Мобильные приложения iOS/Android</li>
+              <li>Мобильные приложения iOS и Android</li>
               <li>Live-ставки с видеотрансляциями</li>
             </ul>
           </div>
-          <div>
+          <div className="cons-card">
             <h3>Недостатки</h3>
-            <ul className="cons-list">
+            <ul className="feature-list">
               <li>Высокая маржа на экзотические рынки</li>
               <li>Ограничения для новых игроков</li>
-              <li>Обязательная верификация</li>
+              <li>Обязательная верификация документов</li>
             </ul>
           </div>
         </div>
       </div>
 
-      {/* Виды спорта */}
-      <div className="wireframe-block" data-block="sports">
+      {/* Sports */}
+      <div className="card">
         <h2>Виды спорта ({data.sports.length})</h2>
-        <div className="sports-list">
-          {data.sports.map((sport) => (
-            <SportCard key={sport.id} sport={sport} />
-          ))}
+        <div className="sports-grid">
+          {data.sports.map((sport) => {
+            const level = getMarginLevel(sport.avgMargin);
+            return (
+              <div className="sport-card" key={sport.id}>
+                <div className="sport-header">
+                  <div className="sport-icon">{SPORT_ICONS[sport.name] || '🎯'}</div>
+                  <span className="sport-name">{sport.name}</span>
+                </div>
+                <div className="sport-stats">
+                  <span>{sport.eventsCount} событий</span>
+                  <span>{sport.marketsCount.toLocaleString()} рынков</span>
+                  <span className={`sport-margin ${level}`}>{sport.avgMargin.toFixed(1)}%</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* История парсинга */}
-      <div className="wireframe-block" data-block="history">
-        <h2>История сбора данных</h2>
-        <table className="wireframe-table">
-          <thead>
-            <tr>
-              <th>Время</th>
-              <th>Статус</th>
-              <th>Спорты</th>
-              <th>События</th>
-              <th>Рынки</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.recentSessions.length > 0 ? (
-              data.recentSessions.map((session) => (
-                <SessionRow key={session.id} session={session} />
-              ))
-            ) : (
+      {/* History */}
+      <div className="card">
+        <h2>История обновлений</h2>
+        <div className="table-container">
+          <table>
+            <thead>
               <tr>
-                <td colSpan={5} style={{ textAlign: 'center' }}>
-                  Нет данных о сессиях
-                </td>
+                <th>Время</th>
+                <th>Статус</th>
+                <th>Спорты</th>
+                <th>События</th>
+                <th>Рынки</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.recentSessions.map((session) => (
+                <tr key={session.id}>
+                  <td>{formatShortDate(session.started_at)}</td>
+                  <td>
+                    <span className={`status-badge ${session.status}`}>
+                      {session.status === 'completed' && 'Завершено'}
+                      {session.status === 'running' && 'В процессе'}
+                      {session.status === 'failed' && 'Ошибка'}
+                    </span>
+                  </td>
+                  <td>{session.sports_count}</td>
+                  <td>{session.events_count.toLocaleString()}</td>
+                  <td>{session.markets_count.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Информация */}
-      <div className="wireframe-block" data-block="info">
+      {/* Company Info */}
+      <div className="card">
         <h2>О букмекере</h2>
-        <table className="wireframe-table">
-          <tbody>
-            <tr>
-              <td style={{ width: 200 }}>
-                <strong>Компания</strong>
-              </td>
-              <td>ООО «Винлайн»</td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Лицензия</strong>
-              </td>
-              <td>ФНС России №28</td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Год основания</strong>
-              </td>
-              <td>2009</td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Сайт</strong>
-              </td>
-              <td>
-                <a href="https://winline.ru" target="_blank" rel="noopener noreferrer">
-                  winline.ru
-                </a>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Мин. депозит</strong>
-              </td>
-              <td>100 ₽</td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Мин. ставка</strong>
-              </td>
-              <td>10 ₽</td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="info-grid">
+          <div className="info-item">
+            <span className="info-label">Компания</span>
+            <span className="info-value">ООО «Винлайн»</span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">Лицензия</span>
+            <span className="info-value">ФНС России №28</span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">Год основания</span>
+            <span className="info-value">2009</span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">Сайт</span>
+            <span className="info-value">
+              <a href="https://winline.ru" target="_blank" rel="noopener noreferrer">winline.ru</a>
+            </span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">Мин. депозит</span>
+            <span className="info-value">100 ₽</span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">Мин. ставка</span>
+            <span className="info-value">10 ₽</span>
+          </div>
+        </div>
       </div>
 
-      {/* Футер */}
-      <div className="wireframe-block" data-block="footer">
-        <p style={{ textAlign: 'center', fontSize: 12, color: '#666' }}>
-          Данные собираются автоматически.
+      {/* Footer */}
+      <footer className="footer">
+        <p>
+          Данные собираются автоматически каждый час
           <br />
-          Wireframe-версия обзора • {new Date().getFullYear()}
+          © {new Date().getFullYear()} Winline Review
         </p>
-      </div>
+      </footer>
     </div>
   );
 }
