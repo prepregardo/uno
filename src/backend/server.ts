@@ -3,7 +3,7 @@ import cors from 'cors';
 import cron from 'node-cron';
 import dotenv from 'dotenv';
 import { query } from './db/connection.js';
-import type { DashboardData, SportDetail, MarginStats } from '../shared/types.js';
+import type { DashboardData, MarginStats } from '../shared/types.js';
 
 dotenv.config();
 
@@ -19,22 +19,22 @@ app.get('/api/health', (req, res) => {
 });
 
 // Dashboard data
-app.get('/api/dashboard', async (req, res) => {
+app.get('/api/dashboard', (req, res) => {
   try {
     // Получаем общую статистику
-    const [stats] = await query<{
-      total_sports: string;
-      total_events: string;
-      total_markets: string;
+    const [stats] = query<{
+      total_sports: number;
+      total_events: number;
+      total_markets: number;
     }>(`
       SELECT
-        (SELECT COUNT(*) FROM sports WHERE is_active = true) as total_sports,
+        (SELECT COUNT(*) FROM sports WHERE is_active = 1) as total_sports,
         (SELECT COUNT(*) FROM events) as total_events,
         (SELECT COUNT(*) FROM markets) as total_markets
     `);
 
     // Получаем статистику по видам спорта
-    const sports = await query<{
+    const sports = query<{
       id: number;
       name: string;
       events_count: number;
@@ -45,14 +45,14 @@ app.get('/api/dashboard', async (req, res) => {
     `);
 
     // Получаем статистику маржи по типам рынков
-    const marginByType = await query<{
+    const marginByType = query<{
       market_type: string;
       avg_margin: number;
       sample_size: number;
     }>(`
       SELECT
         type as market_type,
-        ROUND(AVG(margin)::numeric, 2) as avg_margin,
+        ROUND(AVG(margin), 2) as avg_margin,
         COUNT(*) as sample_size
       FROM markets
       WHERE margin IS NOT NULL
@@ -61,10 +61,10 @@ app.get('/api/dashboard', async (req, res) => {
     `);
 
     // Последние сессии парсинга
-    const recentSessions = await query<{
+    const recentSessions = query<{
       id: number;
-      started_at: Date;
-      completed_at: Date;
+      started_at: string;
+      completed_at: string;
       status: string;
       sports_count: number;
       events_count: number;
@@ -76,15 +76,15 @@ app.get('/api/dashboard', async (req, res) => {
     `);
 
     // Последнее обновление
-    const [lastUpdate] = await query<{ last_updated: Date }>(`
+    const [lastUpdate] = query<{ last_updated: string }>(`
       SELECT MAX(last_updated) as last_updated FROM sports
     `);
 
     const dashboard: DashboardData = {
-      lastUpdate: lastUpdate?.last_updated || new Date(),
-      totalSports: parseInt(stats?.total_sports || '0', 10),
-      totalEvents: parseInt(stats?.total_events || '0', 10),
-      totalMarkets: parseInt(stats?.total_markets || '0', 10),
+      lastUpdate: lastUpdate?.last_updated ? new Date(lastUpdate.last_updated) : new Date(),
+      totalSports: stats?.total_sports || 0,
+      totalEvents: stats?.total_events || 0,
+      totalMarkets: stats?.total_markets || 0,
       sports: sports.map((s) => ({
         id: s.id,
         name: s.name,
@@ -94,13 +94,13 @@ app.get('/api/dashboard', async (req, res) => {
       })),
       marginByType: marginByType.map((m) => ({
         marketType: m.market_type as any,
-        avgMargin: m.avg_margin,
-        sampleSize: parseInt(String(m.sample_size), 10),
+        avgMargin: m.avg_margin || 0,
+        sampleSize: m.sample_size,
       })),
       recentSessions: recentSessions.map((s) => ({
         id: s.id,
-        startedAt: s.started_at,
-        completedAt: s.completed_at,
+        startedAt: new Date(s.started_at),
+        completedAt: s.completed_at ? new Date(s.completed_at) : undefined,
         status: s.status as 'running' | 'completed' | 'failed',
         sportsCount: s.sports_count,
         eventsCount: s.events_count,
@@ -116,56 +116,47 @@ app.get('/api/dashboard', async (req, res) => {
 });
 
 // Детали по виду спорта
-app.get('/api/sports/:id', async (req, res) => {
+app.get('/api/sports/:id', (req, res) => {
   try {
     const sportId = parseInt(req.params.id, 10);
 
-    const [sport] = await query<any>(`
-      SELECT * FROM sports WHERE id = $1
+    const [sport] = query<any>(`
+      SELECT * FROM sports WHERE id = ?
     `, [sportId]);
 
     if (!sport) {
       return res.status(404).json({ error: 'Sport not found' });
     }
 
-    // Турниры с событиями
-    const tournaments = await query<any>(`
-      SELECT
-        t.id,
-        t.external_id,
-        t.name,
-        t.country,
-        t.events_count,
-        json_agg(
-          json_build_object(
-            'id', e.id,
-            'name', e.name,
-            'homeTeam', e.home_team,
-            'awayTeam', e.away_team,
-            'startTime', e.start_time,
-            'isLive', e.is_live,
-            'marketsCount', e.markets_count
-          )
-        ) FILTER (WHERE e.id IS NOT NULL) as events
-      FROM tournaments t
-      LEFT JOIN events e ON e.tournament_id = t.id
-      WHERE t.sport_id = $1
-      GROUP BY t.id
-      ORDER BY t.events_count DESC
+    // Турниры
+    const tournaments = query<any>(`
+      SELECT * FROM tournaments WHERE sport_id = ?
+      ORDER BY events_count DESC
       LIMIT 50
     `, [sportId]);
 
+    // События для турниров
+    const tournamentsWithEvents = tournaments.map(t => {
+      const events = query<any>(`
+        SELECT * FROM events WHERE tournament_id = ?
+        ORDER BY start_time
+        LIMIT 20
+      `, [t.id]);
+
+      return { ...t, events };
+    });
+
     // Статистика маржи
-    const marginStats = await query<MarginStats>(`
+    const marginStats = query<MarginStats>(`
       SELECT * FROM margin_history
-      WHERE sport_id = $1
+      WHERE sport_id = ?
       ORDER BY collected_at DESC
       LIMIT 100
     `, [sportId]);
 
     res.json({
       sport,
-      tournaments,
+      tournaments: tournamentsWithEvents,
       marginStats,
     });
   } catch (error) {
@@ -175,45 +166,38 @@ app.get('/api/sports/:id', async (req, res) => {
 });
 
 // Детали события с рынками
-app.get('/api/events/:id', async (req, res) => {
+app.get('/api/events/:id', (req, res) => {
   try {
     const eventId = parseInt(req.params.id, 10);
 
-    const [event] = await query<any>(`
+    const [event] = query<any>(`
       SELECT e.*, s.name as sport_name, t.name as tournament_name
       FROM events e
       LEFT JOIN sports s ON e.sport_id = s.id
       LEFT JOIN tournaments t ON e.tournament_id = t.id
-      WHERE e.id = $1
+      WHERE e.id = ?
     `, [eventId]);
 
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    // Рынки с исходами
-    const markets = await query<any>(`
-      SELECT
-        m.id,
-        m.name,
-        m.type,
-        m.margin,
-        json_agg(
-          json_build_object(
-            'id', o.id,
-            'name', o.name,
-            'odds', o.odds,
-            'probability', o.probability
-          )
-        ) as outcomes
-      FROM markets m
-      LEFT JOIN outcomes o ON o.market_id = m.id
-      WHERE m.event_id = $1
-      GROUP BY m.id
-      ORDER BY m.name
+    // Рынки
+    const markets = query<any>(`
+      SELECT * FROM markets WHERE event_id = ?
+      ORDER BY name
     `, [eventId]);
 
-    res.json({ event, markets });
+    // Добавляем исходы к каждому рынку
+    const marketsWithOutcomes = markets.map(m => {
+      const outcomes = query<any>(`
+        SELECT * FROM outcomes WHERE market_id = ?
+      `, [m.id]);
+
+      return { ...m, outcomes };
+    });
+
+    res.json({ event, markets: marketsWithOutcomes });
   } catch (error) {
     console.error('Event detail error:', error);
     res.status(500).json({ error: 'Failed to fetch event details' });
@@ -221,31 +205,28 @@ app.get('/api/events/:id', async (req, res) => {
 });
 
 // История маржи для графиков
-app.get('/api/margin-history', async (req, res) => {
+app.get('/api/margin-history', (req, res) => {
   try {
     const sportId = req.query.sportId ? parseInt(req.query.sportId as string, 10) : null;
     const marketType = req.query.marketType as string || null;
     const days = parseInt(req.query.days as string, 10) || 7;
 
-    let whereClause = `WHERE collected_at > NOW() - INTERVAL '${days} days'`;
+    let sql = `SELECT * FROM margin_history WHERE collected_at > datetime('now', '-${days} days')`;
     const params: any[] = [];
 
     if (sportId) {
+      sql += ` AND sport_id = ?`;
       params.push(sportId);
-      whereClause += ` AND sport_id = $${params.length}`;
     }
 
     if (marketType) {
+      sql += ` AND market_type = ?`;
       params.push(marketType);
-      whereClause += ` AND market_type = $${params.length}`;
     }
 
-    const history = await query<MarginStats>(`
-      SELECT * FROM margin_history
-      ${whereClause}
-      ORDER BY collected_at ASC
-    `, params);
+    sql += ` ORDER BY collected_at ASC`;
 
+    const history = query<MarginStats>(sql, params);
     res.json(history);
   } catch (error) {
     console.error('Margin history error:', error);
@@ -256,9 +237,9 @@ app.get('/api/margin-history', async (req, res) => {
 // Запуск парсера вручную
 app.post('/api/scrape', async (req, res) => {
   try {
-    // Запускаем парсер в отдельном процессе
     const { spawn } = await import('child_process');
     const child = spawn('npx', ['tsx', 'src/backend/scraper/run.ts'], {
+      cwd: process.cwd(),
       detached: true,
       stdio: 'ignore',
     });
@@ -280,6 +261,7 @@ cron.schedule(`0 */${scrapeIntervalHours} * * *`, async () => {
   try {
     const { spawn } = await import('child_process');
     spawn('npx', ['tsx', 'src/backend/scraper/run.ts'], {
+      cwd: process.cwd(),
       stdio: 'inherit',
     });
   } catch (error) {

@@ -1,11 +1,11 @@
--- Схема базы данных для Winline Review
+-- Схема базы данных для Winline Review (SQLite)
 
 -- Таблица сессий парсинга
 CREATE TABLE IF NOT EXISTS scrape_sessions (
-    id SERIAL PRIMARY KEY,
-    started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    completed_at TIMESTAMP WITH TIME ZONE,
-    status VARCHAR(20) DEFAULT 'running' CHECK (status IN ('running', 'completed', 'failed')),
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    started_at TEXT DEFAULT (datetime('now')),
+    completed_at TEXT,
+    status TEXT DEFAULT 'running' CHECK (status IN ('running', 'completed', 'failed')),
     sports_count INTEGER DEFAULT 0,
     events_count INTEGER DEFAULT 0,
     markets_count INTEGER DEFAULT 0,
@@ -14,77 +14,77 @@ CREATE TABLE IF NOT EXISTS scrape_sessions (
 
 -- Виды спорта
 CREATE TABLE IF NOT EXISTS sports (
-    id SERIAL PRIMARY KEY,
-    external_id VARCHAR(100) UNIQUE NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    slug VARCHAR(255),
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    external_id TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    slug TEXT,
     events_count INTEGER DEFAULT 0,
     markets_count INTEGER DEFAULT 0,
     icon_url TEXT,
-    is_active BOOLEAN DEFAULT true,
-    last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    is_active INTEGER DEFAULT 1,
+    last_updated TEXT DEFAULT (datetime('now'))
 );
 
 -- Турниры
 CREATE TABLE IF NOT EXISTS tournaments (
-    id SERIAL PRIMARY KEY,
-    external_id VARCHAR(100) UNIQUE NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    external_id TEXT UNIQUE NOT NULL,
     sport_id INTEGER REFERENCES sports(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    country VARCHAR(100),
+    name TEXT NOT NULL,
+    country TEXT,
     events_count INTEGER DEFAULT 0,
-    last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    last_updated TEXT DEFAULT (datetime('now'))
 );
 
 -- События (матчи)
 CREATE TABLE IF NOT EXISTS events (
-    id SERIAL PRIMARY KEY,
-    external_id VARCHAR(100) UNIQUE NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    external_id TEXT UNIQUE NOT NULL,
     sport_id INTEGER REFERENCES sports(id) ON DELETE CASCADE,
     tournament_id INTEGER REFERENCES tournaments(id) ON DELETE CASCADE,
-    name VARCHAR(500) NOT NULL,
-    home_team VARCHAR(255),
-    away_team VARCHAR(255),
-    start_time TIMESTAMP WITH TIME ZONE,
-    is_live BOOLEAN DEFAULT false,
+    name TEXT NOT NULL,
+    home_team TEXT,
+    away_team TEXT,
+    start_time TEXT,
+    is_live INTEGER DEFAULT 0,
     markets_count INTEGER DEFAULT 0,
-    last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    last_updated TEXT DEFAULT (datetime('now'))
 );
 
 -- Рынки (типы ставок)
 CREATE TABLE IF NOT EXISTS markets (
-    id SERIAL PRIMARY KEY,
-    external_id VARCHAR(100) NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    external_id TEXT NOT NULL,
     event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    type VARCHAR(50) NOT NULL,
-    margin DECIMAL(5, 2),
-    last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    margin REAL,
+    last_updated TEXT DEFAULT (datetime('now')),
     UNIQUE(external_id, event_id)
 );
 
 -- Исходы (варианты ставок с коэффициентами)
 CREATE TABLE IF NOT EXISTS outcomes (
-    id SERIAL PRIMARY KEY,
-    external_id VARCHAR(100) NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    external_id TEXT NOT NULL,
     market_id INTEGER REFERENCES markets(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    odds DECIMAL(10, 2) NOT NULL,
-    probability DECIMAL(5, 4),
+    name TEXT NOT NULL,
+    odds REAL NOT NULL,
+    probability REAL,
     UNIQUE(external_id, market_id)
 );
 
 -- История маржи (для графиков и аналитики)
 CREATE TABLE IF NOT EXISTS margin_history (
-    id SERIAL PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     sport_id INTEGER REFERENCES sports(id) ON DELETE CASCADE,
-    sport_name VARCHAR(255) NOT NULL,
-    market_type VARCHAR(50) NOT NULL,
-    avg_margin DECIMAL(5, 2) NOT NULL,
-    min_margin DECIMAL(5, 2),
-    max_margin DECIMAL(5, 2),
+    sport_name TEXT NOT NULL,
+    market_type TEXT NOT NULL,
+    avg_margin REAL NOT NULL,
+    min_margin REAL,
+    max_margin REAL,
     sample_size INTEGER NOT NULL,
-    collected_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    collected_at TEXT DEFAULT (datetime('now'))
 );
 
 -- Индексы для быстрого поиска
@@ -100,7 +100,8 @@ CREATE INDEX IF NOT EXISTS idx_margin_history_sport ON margin_history(sport_id);
 CREATE INDEX IF NOT EXISTS idx_margin_history_time ON margin_history(collected_at);
 
 -- Представление для быстрого получения статистики по видам спорта
-CREATE OR REPLACE VIEW sport_stats AS
+DROP VIEW IF EXISTS sport_stats;
+CREATE VIEW sport_stats AS
 SELECT
     s.id,
     s.name,
@@ -115,11 +116,12 @@ SELECT
     ) as avg_margin,
     s.last_updated
 FROM sports s
-WHERE s.is_active = true
+WHERE s.is_active = 1
 ORDER BY s.events_count DESC;
 
 -- Представление для статистики по типам рынков
-CREATE OR REPLACE VIEW margin_by_market_type AS
+DROP VIEW IF EXISTS margin_by_market_type;
+CREATE VIEW margin_by_market_type AS
 SELECT
     s.name as sport_name,
     m.type as market_type,

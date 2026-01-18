@@ -1,66 +1,69 @@
 import { parser } from './parser.js';
-import { query, transaction } from '../db/connection.js';
+import { query, run, getLastInsertId, transaction } from '../db/connection.js';
 import { calculateMarginStatistics } from './margin.js';
 import type { MarketType } from '../../shared/types.js';
 
-async function saveToDatabase(
+function saveToDatabase(
   sports: Awaited<ReturnType<typeof parser.scrapeAll>>['sports'],
   marginStats: Map<MarketType, number[]>
 ) {
-  return transaction(async (client) => {
+  return transaction(() => {
     // Создаём сессию парсинга
-    const [session] = await client.query(
-      'INSERT INTO scrape_sessions (status) VALUES ($1) RETURNING id',
-      ['running']
-    ).then((r) => r.rows);
+    run(`INSERT INTO scrape_sessions (status) VALUES (?)`, ['running']);
+    const sessionId = getLastInsertId();
 
-    const sessionId = session.id;
     let totalEvents = 0;
     let totalMarkets = 0;
 
     for (const sport of sports) {
       // Upsert спорта
-      const [sportRow] = await client.query(
+      run(
         `INSERT INTO sports (external_id, name, slug, events_count, is_active, last_updated)
-         VALUES ($1, $2, $3, $4, true, NOW())
+         VALUES (?, ?, ?, ?, 1, datetime('now'))
          ON CONFLICT (external_id) DO UPDATE SET
-           name = EXCLUDED.name,
-           events_count = EXCLUDED.events_count,
-           last_updated = NOW()
-         RETURNING id`,
+           name = excluded.name,
+           events_count = excluded.events_count,
+           last_updated = datetime('now')`,
         [sport.id, sport.name, sport.id, sport.events.length]
-      ).then((r) => r.rows);
+      );
 
+      const [sportRow] = query<{ id: number }>(
+        `SELECT id FROM sports WHERE external_id = ?`,
+        [sport.id]
+      );
       const sportDbId = sportRow.id;
 
       // Сохраняем события
       for (const event of sport.events) {
         // Upsert турнира
-        let tournamentDbId = null;
+        let tournamentDbId: number | null = null;
         if (event.tournamentId) {
-          const [tournamentRow] = await client.query(
+          run(
             `INSERT INTO tournaments (external_id, sport_id, name, events_count, last_updated)
-             VALUES ($1, $2, $3, 1, NOW())
+             VALUES (?, ?, ?, 1, datetime('now'))
              ON CONFLICT (external_id) DO UPDATE SET
-               name = EXCLUDED.name,
-               last_updated = NOW()
-             RETURNING id`,
+               name = excluded.name,
+               last_updated = datetime('now')`,
             [event.tournamentId, sportDbId, event.tournamentName || 'Unknown']
-          ).then((r) => r.rows);
-          tournamentDbId = tournamentRow.id;
+          );
+
+          const [tournamentRow] = query<{ id: number }>(
+            `SELECT id FROM tournaments WHERE external_id = ?`,
+            [event.tournamentId]
+          );
+          tournamentDbId = tournamentRow?.id || null;
         }
 
         // Upsert события
-        const [eventRow] = await client.query(
+        run(
           `INSERT INTO events (external_id, sport_id, tournament_id, name, home_team, away_team, start_time, is_live, last_updated)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
            ON CONFLICT (external_id) DO UPDATE SET
-             name = EXCLUDED.name,
-             home_team = EXCLUDED.home_team,
-             away_team = EXCLUDED.away_team,
-             is_live = EXCLUDED.is_live,
-             last_updated = NOW()
-           RETURNING id`,
+             name = excluded.name,
+             home_team = excluded.home_team,
+             away_team = excluded.away_team,
+             is_live = excluded.is_live,
+             last_updated = datetime('now')`,
           [
             event.id,
             sportDbId,
@@ -69,10 +72,14 @@ async function saveToDatabase(
             event.homeTeam,
             event.awayTeam,
             event.startTime || null,
-            event.isLive,
+            event.isLive ? 1 : 0,
           ]
-        ).then((r) => r.rows);
+        );
 
+        const [eventRow] = query<{ id: number }>(
+          `SELECT id FROM events WHERE external_id = ?`,
+          [event.id]
+        );
         const eventDbId = eventRow.id;
         totalEvents++;
 
@@ -85,29 +92,32 @@ async function saveToDatabase(
               ? (odds.reduce((sum, o) => sum + 1 / o, 0) - 1) * 100
               : null;
 
-          const [marketRow] = await client.query(
+          run(
             `INSERT INTO markets (external_id, event_id, name, type, margin, last_updated)
-             VALUES ($1, $2, $3, $4, $5, NOW())
+             VALUES (?, ?, ?, ?, ?, datetime('now'))
              ON CONFLICT (external_id, event_id) DO UPDATE SET
-               name = EXCLUDED.name,
-               margin = EXCLUDED.margin,
-               last_updated = NOW()
-             RETURNING id`,
+               name = excluded.name,
+               margin = excluded.margin,
+               last_updated = datetime('now')`,
             [market.id, eventDbId, market.name, 'OTHER', margin?.toFixed(2)]
-          ).then((r) => r.rows);
+          );
 
+          const [marketRow] = query<{ id: number }>(
+            `SELECT id FROM markets WHERE external_id = ? AND event_id = ?`,
+            [market.id, eventDbId]
+          );
           const marketDbId = marketRow.id;
           totalMarkets++;
 
           // Сохраняем исходы
           for (const outcome of market.outcomes) {
-            await client.query(
+            run(
               `INSERT INTO outcomes (external_id, market_id, name, odds, probability)
-               VALUES ($1, $2, $3, $4, $5)
+               VALUES (?, ?, ?, ?, ?)
                ON CONFLICT (external_id, market_id) DO UPDATE SET
-                 name = EXCLUDED.name,
-                 odds = EXCLUDED.odds,
-                 probability = EXCLUDED.probability`,
+                 name = excluded.name,
+                 odds = excluded.odds,
+                 probability = excluded.probability`,
               [
                 outcome.id,
                 marketDbId,
@@ -125,15 +135,13 @@ async function saveToDatabase(
     for (const [marketType, margins] of marginStats) {
       const stats = calculateMarginStatistics(margins);
 
-      // Находим sport_id для первого спорта (или используем общую статистику)
-      const sportId = sports[0] ? (await client.query(
-        'SELECT id FROM sports WHERE external_id = $1',
-        [sports[0].id]
-      ).then((r) => r.rows[0]?.id)) : null;
+      const sportId = sports[0]
+        ? query<{ id: number }>('SELECT id FROM sports WHERE external_id = ?', [sports[0].id])[0]?.id
+        : null;
 
-      await client.query(
+      run(
         `INSERT INTO margin_history (sport_id, sport_name, market_type, avg_margin, min_margin, max_margin, sample_size, collected_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
         [
           sportId,
           'All Sports',
@@ -147,14 +155,14 @@ async function saveToDatabase(
     }
 
     // Обновляем сессию
-    await client.query(
+    run(
       `UPDATE scrape_sessions SET
          status = 'completed',
-         completed_at = NOW(),
-         sports_count = $1,
-         events_count = $2,
-         markets_count = $3
-       WHERE id = $4`,
+         completed_at = datetime('now'),
+         sports_count = ?,
+         events_count = ?,
+         markets_count = ?
+       WHERE id = ?`,
       [sports.length, totalEvents, totalMarkets, sessionId]
     );
 
@@ -162,7 +170,7 @@ async function saveToDatabase(
   });
 }
 
-async function run() {
+async function runScraper() {
   console.log('🚀 Starting Winline scraper...\n');
   const startTime = Date.now();
 
@@ -171,7 +179,7 @@ async function run() {
     const { sports, marginStats } = await parser.scrapeAll();
 
     console.log('\n💾 Saving to database...');
-    const result = await saveToDatabase(sports, marginStats);
+    const result = saveToDatabase(sports, marginStats);
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`\n✅ Scraping completed in ${duration}s`);
@@ -189,11 +197,13 @@ async function run() {
     console.error('❌ Scraping failed:', error);
 
     // Помечаем сессию как failed
-    await query(
-      `UPDATE scrape_sessions SET status = 'failed', error_message = $1, completed_at = NOW()
-       WHERE status = 'running' ORDER BY started_at DESC LIMIT 1`,
-      [(error as Error).message]
-    );
+    try {
+      run(
+        `UPDATE scrape_sessions SET status = 'failed', error_message = ?, completed_at = datetime('now')
+         WHERE status = 'running'`,
+        [(error as Error).message]
+      );
+    } catch {}
 
     process.exit(1);
   } finally {
@@ -201,4 +211,4 @@ async function run() {
   }
 }
 
-run();
+runScraper();

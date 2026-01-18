@@ -1,55 +1,46 @@
-import { Pool, PoolClient } from 'pg';
-import dotenv from 'dotenv';
+import Database from 'better-sqlite3';
+import { join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 
-dotenv.config();
-
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'winline_review',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
-
-pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
-  process.exit(-1);
-});
-
-export async function query<T>(text: string, params?: unknown[]): Promise<T[]> {
-  const start = Date.now();
-  const result = await pool.query(text, params);
-  const duration = Date.now() - start;
-
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Executed query', { text: text.substring(0, 100), duration, rows: result.rowCount });
-  }
-
-  return result.rows as T[];
+// Создаём папку для БД если её нет
+const dataDir = join(process.cwd(), 'data');
+if (!existsSync(dataDir)) {
+  mkdirSync(dataDir, { recursive: true });
 }
 
-export async function getClient(): Promise<PoolClient> {
-  return pool.connect();
-}
+const dbPath = join(dataDir, 'winline.db');
+const db = new Database(dbPath);
 
-export async function transaction<T>(
-  callback: (client: PoolClient) => Promise<T>
-): Promise<T> {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const result = await callback(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
+// Включаем foreign keys
+db.pragma('foreign_keys = ON');
+
+export function query<T>(sql: string, params: unknown[] = []): T[] {
+  const stmt = db.prepare(sql);
+
+  // Определяем тип запроса
+  const sqlUpper = sql.trim().toUpperCase();
+  const isSelect = sqlUpper.startsWith('SELECT') || sqlUpper.startsWith('WITH');
+
+  if (isSelect) {
+    return stmt.all(...params) as T[];
+  } else {
+    stmt.run(...params);
+    return [] as T[];
   }
 }
 
-export default pool;
+export function run(sql: string, params: unknown[] = []): Database.RunResult {
+  const stmt = db.prepare(sql);
+  return stmt.run(...params);
+}
+
+export function getLastInsertId(): number {
+  const result = db.prepare('SELECT last_insert_rowid() as id').get() as { id: number };
+  return result.id;
+}
+
+export function transaction<T>(callback: () => T): T {
+  return db.transaction(callback)();
+}
+
+export default db;
