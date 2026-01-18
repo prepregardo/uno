@@ -1,0 +1,206 @@
+/* Bookmaker Page Styles */
+
+.bk-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+.bk-breadcrumb {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.bk-breadcrumb a {
+  color: rgba(255, 255, 255, 0.5);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.bk-breadcrumb a:hover {
+  color: white;
+}
+
+.bk-hero {
+  text-align: center;
+  padding: 60px 40px;
+  background: linear-gradient(135deg,
+    rgba(59, 130, 246, 0.3) 0%,
+    rgba(139, 92, 246, 0.3) 50%,
+    rgba(34, 211, 238, 0.2) 100%);
+  backdrop-filter: blur(30px);
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 32px;
+}
+
+.bk-hero-logo {
+  font-size: 80px;
+  margin-bottom: 16px;
+}
+
+.bk-hero h1 {
+  font-size: 48px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fff, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px;
+}
+
+.bk-subtitle {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 20px;
+}
+
+.bk-hero-rating {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.bk-stars {
+  font-size: 28px;
+  color: #fbbf24;
+  letter-spacing: 2px;
+}
+
+.bk-rating-value {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.bk-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.bk-stat-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 24px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.bk-stat-icon {
+  font-size: 28px;
+  margin-bottom: 12px;
+}
+
+.bk-stat-value {
+  display: block;
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fff, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+}
+
+.bk-stat-value.bk-country {
+  font-size: 18px;
+}
+
+.bk-stat-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bk-features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.bk-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  font-size: 15px;
+}
+
+.bk-feature-item.active {
+  color: #4ade80;
+}
+
+.bk-feature-item.inactive {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.bk-feature-icon {
+  font-size: 18px;
+}
+
+.bk-back-section {
+  text-align: center;
+  padding: 40px 0;
+}
+
+@media (max-width: 1024px) {
+  .bk-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .bk-features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .bk-hero {
+    padding: 40px 24px;
+  }
+
+  .bk-hero h1 {
+    font-size: 32px;
+  }
+
+  .bk-hero-logo {
+    font-size: 60px;
+  }
+
+  .bk-stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .bk-features-grid {
+    grid-template-columns: 1fr;
+  }
+}

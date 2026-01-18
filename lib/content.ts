@@ -73,3 +73,40 @@ export function getAllContent(): SiteContent {
     sports: getSports(),
   };
 }
+
+// Полный тип букмекера для списка
+export interface BookmakerFull {
+  slug: string;
+  name: string;
+  website: string;
+  logo: string;
+  rating: number;
+  description: string;
+  license: string;
+  founded: number;
+  country: string;
+  minDeposit: string;
+  minBet: string;
+  maxPayout: string;
+  company: string;
+  avgMargin: number;
+  sportsCount: number;
+  liveBetting: boolean;
+  mobileApp: boolean;
+  cashOut: boolean;
+  streaming: boolean;
+  pros: string[];
+  cons: string[];
+}
+
+export function getAllBookmakers(): BookmakerFull[] {
+  const filePath = path.join(contentDir, 'bookmakers.json');
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const data = JSON.parse(content);
+  return data.bookmakers;
+}
+
+export function getBookmakerBySlug(slug: string): BookmakerFull | null {
+  const bookmakers = getAllBookmakers();
+  return bookmakers.find(b => b.slug === slug) || null;
+}
