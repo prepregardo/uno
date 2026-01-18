@@ -1,0 +1,39 @@
+{
+  "types": [
+    {
+      "marketType": "HANDICAP",
+      "avgMargin": 4.2,
+      "minMargin": 3.2,
+      "maxMargin": 5.4,
+      "sampleSize": 2891
+    },
+    {
+      "marketType": "TOTAL",
+      "avgMargin": 4.8,
+      "minMargin": 3.9,
+      "maxMargin": 5.9,
+      "sampleSize": 3562
+    },
+    {
+      "marketType": "1X2",
+      "avgMargin": 5.2,
+      "minMargin": 4.1,
+      "maxMargin": 6.8,
+      "sampleSize": 2847
+    },
+    {
+      "marketType": "BOTH_SCORE",
+      "avgMargin": 6.5,
+      "minMargin": 5.2,
+      "maxMargin": 8.1,
+      "sampleSize": 1243
+    },
+    {
+      "marketType": "DOUBLE_CHANCE",
+      "avgMargin": 7.8,
+      "minMargin": 6.1,
+      "maxMargin": 9.5,
+      "sampleSize": 987
+    }
+  ]
+}
