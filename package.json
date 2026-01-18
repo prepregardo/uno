@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "next lint",
     "db:migrate": "tsx src/db/migrate.ts",
-    "scrape": "tsx src/scraper/run.ts"
+    "scrape": "tsx src/scraper/run.ts",
+    "scrape:demo": "tsx src/scraper/seed-demo.ts",
+    "scrape:local": "SCRAPE_HEADLESS=false tsx src/scraper/run.ts"
   },
   "dependencies": {
     "@vercel/postgres": "^0.10.0",
