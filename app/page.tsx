@@ -72,11 +72,16 @@ export default function Home() {
       const response = await fetch('/api/dashboard');
       if (!response.ok) throw new Error('Failed to fetch data');
       const result = await response.json();
-      setData(result);
-      setError(null);
+      // Если БД пустая, показываем демо-данные
+      if (!result.totalSports || result.totalSports === 0) {
+        setData(getDemoData());
+        setError('Показаны демо-данные. Реальные данные скоро появятся.');
+      } else {
+        setData(result);
+        setError(null);
+      }
     } catch (err) {
-      setError('Не удалось загрузить данные. Убедитесь, что сервер запущен.');
-      // Показываем демо-данные для wireframe
+      setError('Показаны демо-данные');
       setData(getDemoData());
     } finally {
       setLoading(false);
