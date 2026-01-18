@@ -1,9 +1,8 @@
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth';
+import { getContent, setContent, getAllCmsContent } from '@/lib/db';
 import { getBookmaker, getSports } from '@/lib/content';
-import fs from 'fs';
-import path from 'path';
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -13,6 +12,14 @@ export async function GET() {
   }
 
   try {
+    // Сначала пробуем получить из БД
+    const dbContent = await getAllCmsContent();
+
+    if (dbContent && dbContent.bookmaker) {
+      return NextResponse.json(dbContent);
+    }
+
+    // Если в БД пусто — читаем из файлов (fallback)
     const bookmaker = getBookmaker();
     const sports = getSports();
 
@@ -32,32 +39,19 @@ export async function POST(request: NextRequest) {
 
   try {
     const { bookmaker, sports } = await request.json();
-    const contentDir = path.join(process.cwd(), 'content');
 
-    // Save bookmaker
+    // Сохраняем в базу данных
     if (bookmaker) {
-      const bookmakerPath = path.join(contentDir, 'settings', 'bookmaker.json');
-      fs.writeFileSync(bookmakerPath, JSON.stringify(bookmaker, null, 2));
+      const success = await setContent('bookmaker', bookmaker);
+      if (!success) {
+        throw new Error('Failed to save bookmaker');
+      }
     }
 
-    // Save sports
     if (sports && Array.isArray(sports)) {
-      const sportsDir = path.join(contentDir, 'sports');
-
-      // Clear existing sports files
-      const existingFiles = fs.readdirSync(sportsDir).filter(f => f.endsWith('.json'));
-      for (const file of existingFiles) {
-        fs.unlinkSync(path.join(sportsDir, file));
-      }
-
-      // Write new sports files
-      for (const sport of sports) {
-        const filename = sport.name
-          .toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^\w-]/g, '') + '.json';
-        const sportPath = path.join(sportsDir, filename);
-        fs.writeFileSync(sportPath, JSON.stringify(sport, null, 2));
+      const success = await setContent('sports', sports);
+      if (!success) {
+        throw new Error('Failed to save sports');
       }
     }
 

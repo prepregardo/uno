@@ -239,4 +239,61 @@ export async function initDatabase() {
   await sql`CREATE INDEX IF NOT EXISTS idx_events_sport ON events(sport_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_markets_event ON markets(event_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_markets_type ON markets(type)`;
+
+  // Таблица для CMS контента
+  await sql`
+    CREATE TABLE IF NOT EXISTS cms_content (
+      id SERIAL PRIMARY KEY,
+      key VARCHAR(100) UNIQUE NOT NULL,
+      value JSONB NOT NULL,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
+}
+
+// CMS функции
+export async function getContent(key: string): Promise<any | null> {
+  try {
+    const result = await sql`
+      SELECT value FROM cms_content WHERE key = ${key}
+    `;
+    return result.rows[0]?.value || null;
+  } catch (error) {
+    console.error('Failed to get content:', error);
+    return null;
+  }
+}
+
+export async function setContent(key: string, value: any): Promise<boolean> {
+  try {
+    await sql`
+      INSERT INTO cms_content (key, value, updated_at)
+      VALUES (${key}, ${JSON.stringify(value)}, NOW())
+      ON CONFLICT (key)
+      DO UPDATE SET value = ${JSON.stringify(value)}, updated_at = NOW()
+    `;
+    return true;
+  } catch (error) {
+    console.error('Failed to set content:', error);
+    return false;
+  }
+}
+
+export async function getAllCmsContent(): Promise<{ bookmaker: any; sports: any[] } | null> {
+  try {
+    const bookmaker = await getContent('bookmaker');
+    const sports = await getContent('sports');
+
+    if (!bookmaker && !sports) {
+      return null;
+    }
+
+    return {
+      bookmaker: bookmaker || null,
+      sports: sports || [],
+    };
+  } catch (error) {
+    console.error('Failed to get CMS content:', error);
+    return null;
+  }
 }
