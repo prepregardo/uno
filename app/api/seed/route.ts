@@ -295,7 +295,9 @@ export async function POST() {
     }
 
     // Сохраняем статистику маржи
-    for (const [marketType, margins] of marginsByType) {
+    const marginEntries = Array.from(marginsByType.entries());
+    for (let i = 0; i < marginEntries.length; i++) {
+      const [marketType, margins] = marginEntries[i];
       if (margins.length === 0) continue;
 
       const sorted = [...margins].sort((a, b) => a - b);
