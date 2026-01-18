@@ -1,0 +1,302 @@
+/* Wireframe стили для обзора букмекера */
+
+:root {
+  --wireframe-bg: #f5f5f5;
+  --wireframe-border: #333;
+  --wireframe-text: #333;
+  --wireframe-light: #e0e0e0;
+  --wireframe-accent: #666;
+  --wireframe-good: #4a4;
+  --wireframe-bad: #a44;
+  --wireframe-warn: #a84;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Courier New', monospace;
+  background: var(--wireframe-bg);
+  color: var(--wireframe-text);
+  line-height: 1.6;
+}
+
+/* Wireframe контейнеры */
+.wireframe-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.wireframe-block {
+  border: 2px dashed var(--wireframe-border);
+  padding: 20px;
+  margin-bottom: 20px;
+  background: white;
+  position: relative;
+}
+
+.wireframe-block::before {
+  content: attr(data-block);
+  position: absolute;
+  top: -12px;
+  left: 10px;
+  background: var(--wireframe-bg);
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--wireframe-accent);
+  text-transform: uppercase;
+}
+
+/* Типографика */
+h1 {
+  font-size: 28px;
+  border-bottom: 2px solid var(--wireframe-border);
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+h2 {
+  font-size: 20px;
+  margin-bottom: 15px;
+  color: var(--wireframe-accent);
+}
+
+h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+/* Hero секция */
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding: 30px;
+}
+
+.hero-logo {
+  width: 120px;
+  height: 120px;
+  border: 2px solid var(--wireframe-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wireframe-light);
+  font-size: 14px;
+  text-align: center;
+}
+
+.hero-content h1 {
+  border: none;
+  padding: 0;
+  margin-bottom: 10px;
+}
+
+.hero-rating {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.hero-cta {
+  display: inline-block;
+  padding: 12px 24px;
+  border: 2px solid var(--wireframe-border);
+  background: var(--wireframe-light);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+/* Статистика */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.stat-card {
+  border: 1px solid var(--wireframe-border);
+  padding: 15px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: bold;
+  display: block;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--wireframe-accent);
+  text-transform: uppercase;
+}
+
+/* Таблицы */
+.wireframe-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.wireframe-table th,
+.wireframe-table td {
+  border: 1px solid var(--wireframe-border);
+  padding: 10px;
+  text-align: left;
+}
+
+.wireframe-table th {
+  background: var(--wireframe-light);
+  font-weight: bold;
+}
+
+.wireframe-table tr:nth-child(even) {
+  background: #fafafa;
+}
+
+/* Плюсы и минусы */
+.pros-cons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.pros-list,
+.cons-list {
+  list-style: none;
+}
+
+.pros-list li::before {
+  content: '[+] ';
+  color: var(--wireframe-good);
+}
+
+.cons-list li::before {
+  content: '[-] ';
+  color: var(--wireframe-bad);
+}
+
+/* Маржа визуализация */
+.margin-bar {
+  height: 24px;
+  background: var(--wireframe-light);
+  position: relative;
+  border: 1px solid var(--wireframe-border);
+}
+
+.margin-fill {
+  height: 100%;
+  transition: width 0.3s;
+}
+
+.margin-fill.low {
+  background: var(--wireframe-good);
+}
+
+.margin-fill.medium {
+  background: var(--wireframe-warn);
+}
+
+.margin-fill.high {
+  background: var(--wireframe-bad);
+}
+
+.margin-value {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+}
+
+/* График placeholder */
+.chart-placeholder {
+  height: 300px;
+  border: 2px dashed var(--wireframe-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    var(--wireframe-light) 10px,
+    var(--wireframe-light) 20px
+  );
+}
+
+/* Виды спорта список */
+.sports-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.sport-card {
+  border: 1px solid var(--wireframe-border);
+  padding: 15px;
+}
+
+.sport-name {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.sport-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--wireframe-accent);
+}
+
+/* Последнее обновление */
+.last-update {
+  text-align: right;
+  font-size: 12px;
+  color: var(--wireframe-accent);
+  margin-bottom: 20px;
+}
+
+/* Сессии парсинга */
+.session-status {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 12px;
+  border: 1px solid;
+}
+
+.session-status.completed {
+  border-color: var(--wireframe-good);
+  color: var(--wireframe-good);
+}
+
+.session-status.failed {
+  border-color: var(--wireframe-bad);
+  color: var(--wireframe-bad);
+}
+
+.session-status.running {
+  border-color: var(--wireframe-warn);
+  color: var(--wireframe-warn);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hero {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .pros-cons {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
