@@ -11,10 +11,23 @@ export class WinlineBrowser {
   async init(): Promise<void> {
     console.log('🚀 Initializing browser...');
 
-    this.browser = await chromium.launch({
-      headless: process.env.SCRAPE_HEADLESS !== 'false',
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-    });
+    const browserlessKey = process.env.BROWSERLESS_API_KEY;
+
+    if (browserlessKey) {
+      // Подключаемся к Browserless.io
+      console.log('☁️ Connecting to Browserless.io...');
+      const wsEndpoint = `wss://chrome.browserless.io/playwright?token=${browserlessKey}`;
+
+      this.browser = await chromium.connect(wsEndpoint);
+      console.log('✅ Connected to Browserless');
+    } else {
+      // Локальный браузер
+      console.log('💻 Using local browser...');
+      this.browser = await chromium.launch({
+        headless: process.env.SCRAPE_HEADLESS !== 'false',
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      });
+    }
 
     this.context = await this.browser.newContext({
       viewport: { width: 1920, height: 1080 },
@@ -44,7 +57,7 @@ export class WinlineBrowser {
     console.log('🔐 Attempting to login...');
 
     try {
-      await this.page.goto(WINLINE_URL, { waitUntil: 'networkidle' });
+      await this.page.goto(WINLINE_URL, { waitUntil: 'networkidle', timeout: 60000 });
 
       const loginButton = await this.page.$('button:has-text("Вход"), [data-test="login-button"]');
       if (loginButton) {
@@ -85,7 +98,7 @@ export class WinlineBrowser {
     if (!this.page) throw new Error('Browser not initialized');
 
     console.log('📍 Navigating to sports page...');
-    await this.page.goto(`${WINLINE_URL}/bets`, { waitUntil: 'networkidle' });
+    await this.page.goto(`${WINLINE_URL}/bets`, { waitUntil: 'networkidle', timeout: 60000 });
     await this.page.waitForTimeout(2000);
   }
 
