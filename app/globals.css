@@ -1,14 +1,16 @@
-/* Wireframe стили для обзора букмекера */
+/* Winline Review - Wireframe Styles */
 
 :root {
-  --wireframe-bg: #f5f5f5;
-  --wireframe-border: #333;
-  --wireframe-text: #333;
-  --wireframe-light: #e0e0e0;
-  --wireframe-accent: #666;
-  --wireframe-good: #4a4;
-  --wireframe-bad: #a44;
-  --wireframe-warn: #a84;
+  --bg: #f5f5f5;
+  --bg-white: #ffffff;
+  --border: #333333;
+  --border-light: #dddddd;
+  --text: #333333;
+  --text-muted: #666666;
+  --accent: #555555;
+  --green: #2d8a2d;
+  --yellow: #c9a227;
+  --red: #b84444;
 }
 
 * {
@@ -18,192 +20,210 @@
 }
 
 body {
-  font-family: 'Courier New', monospace;
-  background: var(--wireframe-bg);
-  color: var(--wireframe-text);
+  font-family: 'Courier New', Courier, monospace;
+  background: var(--bg);
+  color: var(--text);
   line-height: 1.6;
+  font-size: 14px;
 }
 
-/* Wireframe контейнеры */
+a {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+/* Container */
 .wireframe-container {
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 20px;
 }
 
+/* Block */
 .wireframe-block {
-  border: 2px dashed var(--wireframe-border);
-  padding: 20px;
+  border: 2px dashed var(--border);
+  padding: 24px;
   margin-bottom: 20px;
-  background: white;
+  background: var(--bg-white);
   position: relative;
 }
 
 .wireframe-block::before {
   content: attr(data-block);
   position: absolute;
-  top: -12px;
-  left: 10px;
-  background: var(--wireframe-bg);
+  top: -10px;
+  left: 12px;
+  background: var(--bg);
   padding: 0 8px;
-  font-size: 12px;
-  color: var(--wireframe-accent);
+  font-size: 11px;
+  color: var(--text-muted);
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* Типографика */
+/* Typography */
 h1 {
-  font-size: 28px;
-  border-bottom: 2px solid var(--wireframe-border);
+  font-size: 26px;
+  font-weight: bold;
+  border-bottom: 2px solid var(--border);
   padding-bottom: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 h2 {
-  font-size: 20px;
-  margin-bottom: 15px;
-  color: var(--wireframe-accent);
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: var(--accent);
 }
 
 h3 {
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: bold;
   margin-bottom: 10px;
 }
 
-/* Hero секция */
+/* Hero */
 .hero {
   display: flex;
   align-items: center;
   gap: 30px;
-  padding: 30px;
 }
 
 .hero-logo {
-  width: 120px;
-  height: 120px;
-  border: 2px solid var(--wireframe-border);
+  width: 100px;
+  height: 100px;
+  border: 2px solid var(--border);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--wireframe-light);
-  font-size: 14px;
-  text-align: center;
+  background: var(--bg);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.hero-content {
+  flex: 1;
 }
 
 .hero-content h1 {
   border: none;
   padding: 0;
+  margin-bottom: 8px;
+}
+
+.hero-content p {
+  color: var(--text-muted);
   margin-bottom: 10px;
 }
 
 .hero-rating {
-  font-size: 24px;
-  margin-bottom: 10px;
+  font-size: 20px;
+  margin-bottom: 12px;
+  color: var(--yellow);
 }
 
 .hero-cta {
   display: inline-block;
-  padding: 12px 24px;
-  border: 2px solid var(--wireframe-border);
-  background: var(--wireframe-light);
-  cursor: pointer;
+  padding: 10px 20px;
+  border: 2px solid var(--border);
+  background: var(--bg);
   font-family: inherit;
-  font-size: 14px;
-  margin-top: 10px;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s;
 }
 
-/* Статистика */
+.hero-cta:hover {
+  background: var(--border);
+  color: var(--bg-white);
+}
+
+/* Stats */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 15px;
 }
 
 .stat-card {
-  border: 1px solid var(--wireframe-border);
-  padding: 15px;
+  border: 1px solid var(--border);
+  padding: 16px;
   text-align: center;
+  background: var(--bg);
 }
 
 .stat-value {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: bold;
   display: block;
+  margin-bottom: 4px;
 }
 
 .stat-label {
-  font-size: 12px;
-  color: var(--wireframe-accent);
+  font-size: 11px;
+  color: var(--text-muted);
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* Таблицы */
+/* Tables */
 .wireframe-table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 13px;
 }
 
 .wireframe-table th,
 .wireframe-table td {
-  border: 1px solid var(--wireframe-border);
-  padding: 10px;
+  border: 1px solid var(--border-light);
+  padding: 10px 12px;
   text-align: left;
 }
 
 .wireframe-table th {
-  background: var(--wireframe-light);
+  background: var(--bg);
   font-weight: bold;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
 }
 
-.wireframe-table tr:nth-child(even) {
+.wireframe-table tbody tr:hover {
   background: #fafafa;
 }
 
-/* Плюсы и минусы */
-.pros-cons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-.pros-list,
-.cons-list {
-  list-style: none;
-}
-
-.pros-list li::before {
-  content: '[+] ';
-  color: var(--wireframe-good);
-}
-
-.cons-list li::before {
-  content: '[-] ';
-  color: var(--wireframe-bad);
-}
-
-/* Маржа визуализация */
+/* Margin Bar */
 .margin-bar {
-  height: 24px;
-  background: var(--wireframe-light);
+  height: 22px;
+  background: var(--bg);
   position: relative;
-  border: 1px solid var(--wireframe-border);
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+  overflow: hidden;
 }
 
 .margin-fill {
   height: 100%;
-  transition: width 0.3s;
+  transition: width 0.3s ease;
 }
 
 .margin-fill.low {
-  background: var(--wireframe-good);
+  background: var(--green);
 }
 
 .margin-fill.medium {
-  background: var(--wireframe-warn);
+  background: var(--yellow);
 }
 
 .margin-fill.high {
-  background: var(--wireframe-bad);
+  background: var(--red);
 }
 
 .margin-value {
@@ -211,92 +231,173 @@ h3 {
   right: 8px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: bold;
 }
 
-/* График placeholder */
-.chart-placeholder {
-  height: 300px;
-  border: 2px dashed var(--wireframe-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 10px,
-    var(--wireframe-light) 10px,
-    var(--wireframe-light) 20px
-  );
+/* Pros & Cons */
+.pros-cons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
 }
 
-/* Виды спорта список */
+.pros-list,
+.cons-list {
+  list-style: none;
+}
+
+.pros-list li,
+.cons-list li {
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--border-light);
+}
+
+.pros-list li::before {
+  content: '[+] ';
+  color: var(--green);
+  font-weight: bold;
+}
+
+.cons-list li::before {
+  content: '[-] ';
+  color: var(--red);
+  font-weight: bold;
+}
+
+/* Sports List */
 .sports-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
 }
 
 .sport-card {
-  border: 1px solid var(--wireframe-border);
-  padding: 15px;
+  border: 1px solid var(--border-light);
+  padding: 14px;
+  background: var(--bg);
 }
 
 .sport-name {
   font-weight: bold;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  font-size: 14px;
 }
 
 .sport-stats {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
-  color: var(--wireframe-accent);
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
-/* Последнее обновление */
+.sport-stats .low {
+  color: var(--green);
+  font-weight: bold;
+}
+
+.sport-stats .medium {
+  color: var(--yellow);
+  font-weight: bold;
+}
+
+.sport-stats .high {
+  color: var(--red);
+  font-weight: bold;
+}
+
+/* Last Update */
 .last-update {
   text-align: right;
   font-size: 12px;
-  color: var(--wireframe-accent);
-  margin-bottom: 20px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
 }
 
-/* Сессии парсинга */
+/* Session Status */
 .session-status {
   display: inline-block;
-  padding: 2px 8px;
-  font-size: 12px;
+  padding: 3px 10px;
+  font-size: 11px;
   border: 1px solid;
+  border-radius: 2px;
 }
 
 .session-status.completed {
-  border-color: var(--wireframe-good);
-  color: var(--wireframe-good);
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(45, 138, 45, 0.1);
 }
 
 .session-status.failed {
-  border-color: var(--wireframe-bad);
-  color: var(--wireframe-bad);
+  border-color: var(--red);
+  color: var(--red);
+  background: rgba(184, 68, 68, 0.1);
 }
 
 .session-status.running {
-  border-color: var(--wireframe-warn);
-  color: var(--wireframe-warn);
+  border-color: var(--yellow);
+  color: var(--yellow);
+  background: rgba(201, 162, 39, 0.1);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
+  .wireframe-container {
+    padding: 12px;
+  }
+
+  .wireframe-block {
+    padding: 16px;
+  }
+
   .hero {
     flex-direction: column;
     text-align: center;
   }
 
-  .pros-cons {
-    grid-template-columns: 1fr;
+  .hero-logo {
+    margin-bottom: 10px;
   }
 
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pros-cons {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .sports-list {
+    grid-template-columns: 1fr;
+  }
+
+  .wireframe-table {
+    font-size: 12px;
+  }
+
+  .wireframe-table th,
+  .wireframe-table td {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+  }
+
+  h1 {
+    font-size: 20px;
+  }
+
+  h2 {
+    font-size: 16px;
   }
 }

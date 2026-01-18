@@ -2,157 +2,390 @@
 
 import { useEffect, useState } from 'react';
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  BarChart,
-  Bar,
+  Cell,
 } from 'recharts';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+
+// ============ ТИПЫ ============
+interface Sport {
+  id: number;
+  name: string;
+  eventsCount: number;
+  marketsCount: number;
+  avgMargin: number;
+}
+
+interface MarginData {
+  marketType: string;
+  avgMargin: number;
+  minMargin?: number;
+  maxMargin?: number;
+  sampleSize: number;
+}
+
+interface Session {
+  id: number;
+  started_at: string;
+  completed_at: string;
+  status: 'running' | 'completed' | 'failed';
+  sports_count: number;
+  events_count: number;
+  markets_count: number;
+}
 
 interface DashboardData {
   lastUpdate: string;
   totalSports: number;
   totalEvents: number;
   totalMarkets: number;
-  sports: Array<{
-    id: number;
-    name: string;
-    eventsCount: number;
-    marketsCount: number;
-    avgMargin: number;
-  }>;
-  marginByType: Array<{
-    marketType: string;
-    avgMargin: number;
-    sampleSize: number;
-  }>;
-  recentSessions: Array<{
-    id: number;
-    startedAt: string;
-    completedAt: string;
-    status: 'running' | 'completed' | 'failed';
-    sportsCount: number;
-    eventsCount: number;
-    marketsCount: number;
-  }>;
+  sports: Sport[];
+  marginByType: MarginData[];
+  recentSessions: Session[];
 }
 
-// Маппинг типов рынков на русский
-const marketTypeLabels: Record<string, string> = {
-  '1X2': 'Исход матча',
-  'TOTAL': 'Тоталы',
-  'HANDICAP': 'Форы',
-  'BOTH_SCORE': 'Обе забьют',
-  'DOUBLE_CHANCE': 'Двойной шанс',
-  'CORRECT_SCORE': 'Точный счёт',
-  'FIRST_GOAL': 'Первый гол',
-  'OTHER': 'Прочие',
+// ============ КОНСТАНТЫ ============
+const MARKET_TYPE_LABELS: Record<string, string> = {
+  '1X2': 'Исход (1X2)',
+  TOTAL: 'Тоталы',
+  HANDICAP: 'Форы',
+  BOTH_SCORE: 'Обе забьют',
+  DOUBLE_CHANCE: 'Двойной шанс',
+  CORRECT_SCORE: 'Точный счёт',
+  OTHER: 'Прочие',
 };
 
-export default function Home() {
+const MARGIN_COLORS = {
+  low: '#2d8a2d',
+  medium: '#c9a227',
+  high: '#b84444',
+};
+
+// ============ ДЕМО ДАННЫЕ ============
+const DEMO_DATA: DashboardData = {
+  lastUpdate: new Date().toISOString(),
+  totalSports: 10,
+  totalEvents: 2874,
+  totalMarkets: 18453,
+  sports: [
+    { id: 1, name: 'Футбол', eventsCount: 847, marketsCount: 7521, avgMargin: 5.2 },
+    { id: 2, name: 'Хоккей', eventsCount: 234, marketsCount: 1856, avgMargin: 5.8 },
+    { id: 3, name: 'Баскетбол', eventsCount: 312, marketsCount: 2476, avgMargin: 6.1 },
+    { id: 4, name: 'Теннис', eventsCount: 456, marketsCount: 1843, avgMargin: 5.5 },
+    { id: 5, name: 'Волейбол', eventsCount: 123, marketsCount: 854, avgMargin: 6.3 },
+    { id: 6, name: 'Киберспорт', eventsCount: 567, marketsCount: 2187, avgMargin: 7.2 },
+    { id: 7, name: 'Настольный теннис', eventsCount: 189, marketsCount: 756, avgMargin: 6.8 },
+    { id: 8, name: 'Гандбол', eventsCount: 78, marketsCount: 468, avgMargin: 6.5 },
+    { id: 9, name: 'ММА', eventsCount: 45, marketsCount: 315, avgMargin: 7.8 },
+    { id: 10, name: 'Бокс', eventsCount: 23, marketsCount: 177, avgMargin: 8.2 },
+  ],
+  marginByType: [
+    { marketType: '1X2', avgMargin: 5.2, minMargin: 4.1, maxMargin: 6.8, sampleSize: 2847 },
+    { marketType: 'TOTAL', avgMargin: 4.8, minMargin: 3.9, maxMargin: 5.9, sampleSize: 3562 },
+    { marketType: 'HANDICAP', avgMargin: 4.2, minMargin: 3.2, maxMargin: 5.4, sampleSize: 2891 },
+    { marketType: 'BOTH_SCORE', avgMargin: 6.5, minMargin: 5.2, maxMargin: 8.1, sampleSize: 1243 },
+    { marketType: 'DOUBLE_CHANCE', avgMargin: 7.8, minMargin: 6.1, maxMargin: 9.5, sampleSize: 987 },
+  ],
+  recentSessions: [
+    {
+      id: 1,
+      started_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
+      status: 'completed',
+      sports_count: 10,
+      events_count: 2874,
+      markets_count: 18453,
+    },
+    {
+      id: 2,
+      started_at: new Date(Date.now() - 3600000).toISOString(),
+      completed_at: new Date(Date.now() - 3600000).toISOString(),
+      status: 'completed',
+      sports_count: 10,
+      events_count: 2756,
+      markets_count: 17987,
+    },
+    {
+      id: 3,
+      started_at: new Date(Date.now() - 7200000).toISOString(),
+      completed_at: new Date(Date.now() - 7200000).toISOString(),
+      status: 'completed',
+      sports_count: 10,
+      events_count: 2698,
+      markets_count: 17654,
+    },
+  ],
+};
+
+// ============ УТИЛИТЫ ============
+function getMarginLevel(margin: number): 'low' | 'medium' | 'high' {
+  if (margin < 5) return 'low';
+  if (margin < 7) return 'medium';
+  return 'high';
+}
+
+function getMarginColor(margin: number): string {
+  return MARGIN_COLORS[getMarginLevel(margin)];
+}
+
+function formatDate(dateString: string): string {
+  try {
+    return format(new Date(dateString), 'dd MMMM yyyy, HH:mm', { locale: ru });
+  } catch {
+    return dateString;
+  }
+}
+
+function formatShortDate(dateString: string): string {
+  try {
+    return format(new Date(dateString), 'dd.MM.yy HH:mm');
+  } catch {
+    return '-';
+  }
+}
+
+// ============ КОМПОНЕНТЫ ============
+
+function StatCard({ value, label }: { value: string | number; label: string }) {
+  return (
+    <div className="stat-card">
+      <span className="stat-value">{value}</span>
+      <span className="stat-label">{label}</span>
+    </div>
+  );
+}
+
+function MarginBar({ margin }: { margin: number }) {
+  const level = getMarginLevel(margin);
+  const width = Math.min(margin * 8, 100);
+
+  return (
+    <div className="margin-bar">
+      <div className={`margin-fill ${level}`} style={{ width: `${width}%` }} />
+      <span className="margin-value">{margin.toFixed(1)}%</span>
+    </div>
+  );
+}
+
+function MarginChart({ data }: { data: MarginData[] }) {
+  return (
+    <div style={{ height: 300, marginTop: 20 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} layout="vertical" margin={{ left: 100 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#ccc" />
+          <XAxis
+            type="number"
+            domain={[0, 12]}
+            tickFormatter={(v) => `${v}%`}
+            tick={{ fontSize: 12 }}
+          />
+          <YAxis
+            type="category"
+            dataKey="marketType"
+            tick={{ fontSize: 12 }}
+            tickFormatter={(v) => MARKET_TYPE_LABELS[v] || v}
+            width={90}
+          />
+          <Tooltip
+            formatter={(value: number) => [`${value.toFixed(2)}%`, 'Маржа']}
+            labelFormatter={(label) => MARKET_TYPE_LABELS[label] || label}
+          />
+          <Bar dataKey="avgMargin" radius={[0, 4, 4, 0]}>
+            {data.map((entry, index) => (
+              <Cell key={index} fill={getMarginColor(entry.avgMargin)} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function SportCard({ sport }: { sport: Sport }) {
+  const level = getMarginLevel(sport.avgMargin);
+  return (
+    <div className="sport-card">
+      <div className="sport-name">{sport.name}</div>
+      <div className="sport-stats">
+        <span>{sport.eventsCount} событий</span>
+        <span>{sport.marketsCount} рынков</span>
+        <span className={level}>{sport.avgMargin.toFixed(1)}%</span>
+      </div>
+    </div>
+  );
+}
+
+function SessionRow({ session }: { session: Session }) {
+  return (
+    <tr>
+      <td>{formatShortDate(session.started_at)}</td>
+      <td>
+        <span className={`session-status ${session.status}`}>
+          {session.status === 'completed' && '✓ Завершено'}
+          {session.status === 'running' && '⟳ В процессе'}
+          {session.status === 'failed' && '✗ Ошибка'}
+        </span>
+      </td>
+      <td>{session.sports_count}</td>
+      <td>{session.events_count.toLocaleString()}</td>
+      <td>{session.markets_count.toLocaleString()}</td>
+    </tr>
+  );
+}
+
+// ============ ГЛАВНЫЙ КОМПОНЕНТ ============
+export default function HomePage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
     fetchData();
-    // Автообновление каждые 5 минут
     const interval = setInterval(fetchData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {
     try {
-      const response = await fetch('/api/dashboard');
-      if (!response.ok) throw new Error('Failed to fetch data');
-      const result = await response.json();
-      // Если БД пустая, показываем демо-данные
+      const res = await fetch('/api/dashboard');
+      if (!res.ok) throw new Error('API error');
+
+      const result = await res.json();
+
       if (!result.totalSports || result.totalSports === 0) {
-        setData(getDemoData());
-        setError('Показаны демо-данные. Реальные данные скоро появятся.');
+        setData(DEMO_DATA);
+        setIsDemo(true);
       } else {
         setData(result);
-        setError(null);
+        setIsDemo(false);
       }
-    } catch (err) {
-      setError('Показаны демо-данные');
-      setData(getDemoData());
+    } catch {
+      setData(DEMO_DATA);
+      setIsDemo(true);
     } finally {
       setLoading(false);
     }
-  };
-
-  const getMarginClass = (margin: number) => {
-    if (margin < 5) return 'low';
-    if (margin < 8) return 'medium';
-    return 'high';
   };
 
   if (loading) {
     return (
       <div className="wireframe-container">
         <div className="wireframe-block" data-block="loading">
-          <p>Загрузка данных...</p>
+          <p style={{ textAlign: 'center', padding: 40 }}>Загрузка данных...</p>
         </div>
       </div>
     );
   }
 
+  if (!data) return null;
+
+  const avgMargin =
+    data.marginByType.length > 0
+      ? data.marginByType.reduce((sum, m) => sum + m.avgMargin, 0) / data.marginByType.length
+      : 0;
+
   return (
     <div className="wireframe-container">
-      {/* Hero секция */}
+      {/* Hero */}
       <div className="wireframe-block" data-block="hero">
         <div className="hero">
-          <div className="hero-logo">[LOGO]<br />Winline</div>
+          <div className="hero-logo">
+            <span style={{ fontSize: 32 }}>W</span>
+            <br />
+            Winline
+          </div>
           <div className="hero-content">
             <h1>Обзор Winline</h1>
-            <p>Автоматизированный анализ букмекерской компании</p>
-            <div className="hero-rating">
-              Общий рейтинг: {'★'.repeat(4)}{'☆'.repeat(1)} (4.2/5)
-            </div>
-            <button className="hero-cta">[Перейти на сайт →]</button>
+            <p>Автоматизированный анализ букмекерской конторы</p>
+            <div className="hero-rating">★★★★☆ 4.2/5</div>
+            <a
+              href="https://winline.ru"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hero-cta"
+            >
+              Перейти на сайт →
+            </a>
           </div>
         </div>
       </div>
 
-      {/* Последнее обновление */}
+      {/* Метаданные */}
       <div className="last-update">
-        Последнее обновление: {data?.lastUpdate
-          ? format(new Date(data.lastUpdate), 'dd MMMM yyyy, HH:mm', { locale: ru })
-          : 'Нет данных'}
-        {error && <span style={{ color: 'var(--wireframe-warn)', marginLeft: '10px' }}>({error})</span>}
+        {isDemo && (
+          <span style={{ color: MARGIN_COLORS.medium, marginRight: 10 }}>
+            [Демо-данные]
+          </span>
+        )}
+        Обновлено: {formatDate(data.lastUpdate)}
       </div>
 
-      {/* Quick Stats */}
-      <div className="wireframe-block" data-block="quick-stats">
-        <h2>Статистика в реальном времени</h2>
+      {/* Статистика */}
+      <div className="wireframe-block" data-block="stats">
+        <h2>Статистика линии</h2>
         <div className="stats-grid">
-          <div className="stat-card">
-            <span className="stat-value">{data?.totalSports || 0}</span>
-            <span className="stat-label">Видов спорта</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-value">{data?.totalEvents || 0}</span>
-            <span className="stat-label">Событий</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-value">{data?.totalMarkets || 0}</span>
-            <span className="stat-label">Рынков</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-value">
-              {data?.marginByType?.length
-                ? (data.marginByType.reduce((sum, m) => sum + m.avgMargin, 0) / data.marginByType.length).toFixed(1)
-                : '0'}%
-            </span>
-            <span className="stat-label">Средняя маржа</span>
-          </div>
+          <StatCard value={data.totalSports} label="Видов спорта" />
+          <StatCard value={data.totalEvents.toLocaleString()} label="Событий" />
+          <StatCard value={data.totalMarkets.toLocaleString()} label="Рынков" />
+          <StatCard value={`${avgMargin.toFixed(1)}%`} label="Средняя маржа" />
+        </div>
+      </div>
+
+      {/* Анализ маржи */}
+      <div className="wireframe-block" data-block="margin">
+        <h2>Анализ маржи по типам ставок</h2>
+
+        <table className="wireframe-table">
+          <thead>
+            <tr>
+              <th>Тип рынка</th>
+              <th>Средняя</th>
+              <th>Мин.</th>
+              <th>Макс.</th>
+              <th style={{ width: '30%' }}>Визуализация</th>
+              <th>Выборка</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.marginByType.map((item) => (
+              <tr key={item.marketType}>
+                <td>
+                  <strong>{MARKET_TYPE_LABELS[item.marketType] || item.marketType}</strong>
+                </td>
+                <td>{item.avgMargin.toFixed(2)}%</td>
+                <td>{item.minMargin?.toFixed(1) || '—'}%</td>
+                <td>{item.maxMargin?.toFixed(1) || '—'}%</td>
+                <td>
+                  <MarginBar margin={item.avgMargin} />
+                </td>
+                <td>{item.sampleSize.toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <MarginChart data={data.marginByType} />
+
+        <div
+          style={{
+            marginTop: 15,
+            padding: 10,
+            background: '#f9f9f9',
+            border: '1px solid #ddd',
+            fontSize: 12,
+          }}
+        >
+          <strong>Легенда:</strong>
+          <span style={{ color: MARGIN_COLORS.low, marginLeft: 15 }}>■ Низкая (&lt;5%)</span>
+          <span style={{ color: MARGIN_COLORS.medium, marginLeft: 15 }}>■ Средняя (5-7%)</span>
+          <span style={{ color: MARGIN_COLORS.high, marginLeft: 15 }}>■ Высокая (&gt;7%)</span>
         </div>
       </div>
 
@@ -163,124 +396,38 @@ export default function Home() {
           <div>
             <h3>Преимущества</h3>
             <ul className="pros-list">
-              <li>Широкая линия ({data?.totalSports || 0}+ видов спорта)</li>
-              <li>Большой выбор рынков ({data?.totalMarkets || 0}+)</li>
+              <li>Широкая линия ({data.totalSports} видов спорта)</li>
+              <li>Большой выбор рынков ({data.totalMarkets.toLocaleString()}+)</li>
+              <li>Низкая маржа на форы ({data.marginByType.find(m => m.marketType === 'HANDICAP')?.avgMargin.toFixed(1) || '4.2'}%)</li>
               <li>Лицензия ФНС России</li>
-              <li>Мобильное приложение iOS/Android</li>
-              <li>Live ставки с трансляциями</li>
+              <li>Мобильные приложения iOS/Android</li>
+              <li>Live-ставки с видеотрансляциями</li>
             </ul>
           </div>
           <div>
             <h3>Недостатки</h3>
             <ul className="cons-list">
-              <li>Маржа выше среднего на некоторых рынках</li>
-              <li>Ограничения на вывод для новых игроков</li>
-              <li>Верификация документов обязательна</li>
+              <li>Высокая маржа на экзотические рынки</li>
+              <li>Ограничения для новых игроков</li>
+              <li>Обязательная верификация</li>
             </ul>
           </div>
         </div>
       </div>
 
-      {/* Маржа по типам рынков */}
-      <div className="wireframe-block" data-block="margin-analysis">
-        <h2>Анализ маржи по типам рынков</h2>
-        {data?.marginByType && data.marginByType.length > 0 ? (
-          <>
-            <table className="wireframe-table">
-              <thead>
-                <tr>
-                  <th>Тип рынка</th>
-                  <th>Средняя маржа</th>
-                  <th>Визуализация</th>
-                  <th>Выборка</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.marginByType.map((item) => (
-                  <tr key={item.marketType}>
-                    <td>{marketTypeLabels[item.marketType] || item.marketType}</td>
-                    <td>{item.avgMargin.toFixed(2)}%</td>
-                    <td>
-                      <div className="margin-bar">
-                        <div
-                          className={`margin-fill ${getMarginClass(item.avgMargin)}`}
-                          style={{ width: `${Math.min(item.avgMargin * 5, 100)}%` }}
-                        />
-                        <span className="margin-value">{item.avgMargin.toFixed(1)}%</span>
-                      </div>
-                    </td>
-                    <td>{item.sampleSize} рынков</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* График маржи */}
-            <div style={{ marginTop: '20px', height: '300px' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.marginByType}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ccc" />
-                  <XAxis
-                    dataKey="marketType"
-                    tick={{ fontSize: 12 }}
-                    tickFormatter={(value) => marketTypeLabels[value] || value}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12 }}
-                    domain={[0, 15]}
-                    tickFormatter={(value) => `${value}%`}
-                  />
-                  <Tooltip
-                    formatter={(value: number) => [`${value.toFixed(2)}%`, 'Маржа']}
-                    labelFormatter={(label) => marketTypeLabels[label] || label}
-                  />
-                  <Bar dataKey="avgMargin" fill="#666" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </>
-        ) : (
-          <div className="chart-placeholder">[График маржи - нет данных]</div>
-        )}
-      </div>
-
       {/* Виды спорта */}
-      <div className="wireframe-block" data-block="sports-list">
-        <h2>Виды спорта ({data?.sports?.length || 0})</h2>
+      <div className="wireframe-block" data-block="sports">
+        <h2>Виды спорта ({data.sports.length})</h2>
         <div className="sports-list">
-          {data?.sports?.slice(0, 12).map((sport) => (
-            <div className="sport-card" key={sport.id}>
-              <div className="sport-name">{sport.name}</div>
-              <div className="sport-stats">
-                <span>{sport.eventsCount} событий</span>
-                <span>{sport.marketsCount} рынков</span>
-                <span>
-                  Маржа: <strong className={getMarginClass(sport.avgMargin)}>
-                    {sport.avgMargin.toFixed(1)}%
-                  </strong>
-                </span>
-              </div>
-            </div>
-          )) || (
-            <>
-              {['Футбол', 'Хоккей', 'Баскетбол', 'Теннис', 'Волейбол', 'Киберспорт'].map((name) => (
-                <div className="sport-card" key={name}>
-                  <div className="sport-name">{name}</div>
-                  <div className="sport-stats">
-                    <span>-- событий</span>
-                    <span>-- рынков</span>
-                    <span>Маржа: --%</span>
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
+          {data.sports.map((sport) => (
+            <SportCard key={sport.id} sport={sport} />
+          ))}
         </div>
       </div>
 
       {/* История парсинга */}
-      <div className="wireframe-block" data-block="scrape-history">
-        <h2>История обновлений данных</h2>
+      <div className="wireframe-block" data-block="history">
+        <h2>История сбора данных</h2>
         <table className="wireframe-table">
           <thead>
             <tr>
@@ -292,28 +439,14 @@ export default function Home() {
             </tr>
           </thead>
           <tbody>
-            {data?.recentSessions?.map((session) => (
-              <tr key={session.id}>
-                <td>
-                  {session.startedAt
-                    ? format(new Date(session.startedAt), 'dd.MM.yy HH:mm')
-                    : '-'}
-                </td>
-                <td>
-                  <span className={`session-status ${session.status}`}>
-                    {session.status === 'completed' && 'Завершено'}
-                    {session.status === 'running' && 'В процессе'}
-                    {session.status === 'failed' && 'Ошибка'}
-                  </span>
-                </td>
-                <td>{session.sportsCount}</td>
-                <td>{session.eventsCount}</td>
-                <td>{session.marketsCount}</td>
-              </tr>
-            )) || (
+            {data.recentSessions.length > 0 ? (
+              data.recentSessions.map((session) => (
+                <SessionRow key={session.id} session={session} />
+              ))
+            ) : (
               <tr>
                 <td colSpan={5} style={{ textAlign: 'center' }}>
-                  Нет данных о сессиях парсинга
+                  Нет данных о сессиях
                 </td>
               </tr>
             )}
@@ -321,79 +454,63 @@ export default function Home() {
         </table>
       </div>
 
-      {/* Информация о компании */}
-      <div className="wireframe-block" data-block="company-info">
-        <h2>Информация о букмекере</h2>
+      {/* Информация */}
+      <div className="wireframe-block" data-block="info">
+        <h2>О букмекере</h2>
         <table className="wireframe-table">
           <tbody>
             <tr>
-              <td><strong>Название</strong></td>
+              <td style={{ width: 200 }}>
+                <strong>Компания</strong>
+              </td>
               <td>ООО «Винлайн»</td>
             </tr>
             <tr>
-              <td><strong>Лицензия</strong></td>
+              <td>
+                <strong>Лицензия</strong>
+              </td>
               <td>ФНС России №28</td>
             </tr>
             <tr>
-              <td><strong>Год основания</strong></td>
+              <td>
+                <strong>Год основания</strong>
+              </td>
               <td>2009</td>
             </tr>
             <tr>
-              <td><strong>Сайт</strong></td>
-              <td>winline.ru</td>
+              <td>
+                <strong>Сайт</strong>
+              </td>
+              <td>
+                <a href="https://winline.ru" target="_blank" rel="noopener noreferrer">
+                  winline.ru
+                </a>
+              </td>
             </tr>
             <tr>
-              <td><strong>Мин. депозит</strong></td>
+              <td>
+                <strong>Мин. депозит</strong>
+              </td>
               <td>100 ₽</td>
             </tr>
             <tr>
-              <td><strong>Мин. ставка</strong></td>
+              <td>
+                <strong>Мин. ставка</strong>
+              </td>
               <td>10 ₽</td>
-            </tr>
-            <tr>
-              <td><strong>Приложения</strong></td>
-              <td>iOS, Android</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      {/* Footer */}
+      {/* Футер */}
       <div className="wireframe-block" data-block="footer">
-        <p style={{ textAlign: 'center', fontSize: '12px', color: 'var(--wireframe-accent)' }}>
-          Данные собираются автоматически каждый час.<br />
-          Это wireframe-версия обзора. Дизайн будет доработан.
+        <p style={{ textAlign: 'center', fontSize: 12, color: '#666' }}>
+          Данные собираются автоматически.
+          <br />
+          Wireframe-версия обзора • {new Date().getFullYear()}
         </p>
       </div>
     </div>
   );
-}
-
-// Демо-данные для отображения wireframe без бэкенда
-function getDemoData(): DashboardData {
-  return {
-    lastUpdate: new Date().toISOString(),
-    totalSports: 25,
-    totalEvents: 1847,
-    totalMarkets: 12453,
-    sports: [
-      { id: 1, name: 'Футбол', eventsCount: 523, marketsCount: 4521, avgMargin: 5.2 },
-      { id: 2, name: 'Хоккей', eventsCount: 187, marketsCount: 1456, avgMargin: 5.8 },
-      { id: 3, name: 'Баскетбол', eventsCount: 234, marketsCount: 1876, avgMargin: 6.1 },
-      { id: 4, name: 'Теннис', eventsCount: 312, marketsCount: 1543, avgMargin: 5.5 },
-      { id: 5, name: 'Волейбол', eventsCount: 98, marketsCount: 654, avgMargin: 6.3 },
-      { id: 6, name: 'Киберспорт', eventsCount: 156, marketsCount: 987, avgMargin: 7.2 },
-    ],
-    marginByType: [
-      { marketType: '1X2', avgMargin: 5.2, sampleSize: 1523 },
-      { marketType: 'TOTAL', avgMargin: 5.8, sampleSize: 2341 },
-      { marketType: 'HANDICAP', avgMargin: 6.1, sampleSize: 1876 },
-      { marketType: 'BOTH_SCORE', avgMargin: 7.3, sampleSize: 543 },
-      { marketType: 'DOUBLE_CHANCE', avgMargin: 8.5, sampleSize: 321 },
-    ],
-    recentSessions: [
-      { id: 1, startedAt: new Date().toISOString(), completedAt: new Date().toISOString(), status: 'completed', sportsCount: 25, eventsCount: 1847, marketsCount: 12453 },
-      { id: 2, startedAt: new Date(Date.now() - 3600000).toISOString(), completedAt: new Date(Date.now() - 3600000).toISOString(), status: 'completed', sportsCount: 24, eventsCount: 1756, marketsCount: 11987 },
-    ],
-  };
 }
