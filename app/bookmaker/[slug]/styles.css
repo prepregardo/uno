@@ -21,6 +21,61 @@ summary:focus-visible {
   outline-offset: 2px;
 }
 
+/* Lite YouTube - Performance optimized video embed */
+.lite-youtube-btn {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: none;
+  padding: 0;
+  background: #000;
+  cursor: pointer;
+  contain: content;
+}
+
+.lite-youtube-btn img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lite-youtube-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s, filter 0.2s;
+  filter: grayscale(100%);
+}
+
+.lite-youtube-btn:hover .lite-youtube-play,
+.lite-youtube-btn:focus .lite-youtube-play {
+  transform: translate(-50%, -50%) scale(1.1);
+  filter: none;
+}
+
+/* Content visibility for below-the-fold sections - improves LCP */
+.bk-faq,
+.bk-complaints,
+.bk-apps,
+.bk-payments,
+.bk-support,
+.bk-reliability,
+.bk-licenses,
+.bk-company,
+.bk-org,
+.bk-history {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 300px;
+}
+
+/* Layout containment for performance */
+.bk-card {
+  contain: layout style paint;
+}
+
 .bk-page {
   background: #f0f2f5;
   min-height: 100vh;

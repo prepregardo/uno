@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import './Header.css';
 
 const navItems = [
@@ -18,18 +18,20 @@ const navItems = [
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const searchId = useId();
+  const mobileNavId = useId();
 
   return (
-    <header className="header">
+    <header className="header" role="banner">
       <div className="header-container">
         {/* Logo */}
-        <Link href="/" className="logo">
-          <span className="logo-icon">РБ</span>
-          <span className="logo-text">Рейтинг<br/>Букмекеров</span>
+        <Link href="/" className="logo" aria-label="РБ - Рейтинг Букмекеров - Главная страница">
+          <span className="logo-icon" aria-hidden="true">РБ</span>
+          <span className="logo-text" aria-hidden="true">Рейтинг<br/>Букмекеров</span>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="nav-desktop">
+        <nav className="nav-desktop" aria-label="Основная навигация">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href} className="nav-link">
               {item.label}
@@ -41,11 +43,14 @@ export default function Header() {
         <div className="header-right">
           {/* Search */}
           <button
+            type="button"
             className="header-btn search-btn"
             onClick={() => setSearchOpen(!searchOpen)}
-            aria-label="Поиск"
+            aria-label={searchOpen ? 'Закрыть поиск' : 'Открыть поиск'}
+            aria-expanded={searchOpen}
+            aria-controls={searchId}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <circle cx="11" cy="11" r="8"/>
               <path d="m21 21-4.35-4.35"/>
             </svg>
@@ -58,11 +63,14 @@ export default function Header() {
 
           {/* Mobile Menu Button */}
           <button
+            type="button"
             className="mobile-menu-btn"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Меню"
+            aria-label={mobileMenuOpen ? 'Закрыть меню' : 'Открыть меню'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls={mobileNavId}
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               {mobileMenuOpen ? (
                 <path d="M18 6L6 18M6 6l12 12"/>
               ) : (
@@ -79,16 +87,19 @@ export default function Header() {
 
       {/* Search Dropdown */}
       {searchOpen && (
-        <div className="search-dropdown">
+        <div id={searchId} className="search-dropdown" role="search">
           <div className="search-container">
+            <label htmlFor="search-input" className="visually-hidden">Поиск по сайту</label>
             <input
-              type="text"
+              id="search-input"
+              type="search"
               placeholder="Поиск букмекеров, бонусов, статей..."
               className="search-input"
               autoFocus
+              autoComplete="off"
             />
-            <button className="search-submit">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <button type="submit" className="search-submit" aria-label="Найти">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <circle cx="11" cy="11" r="8"/>
                 <path d="m21 21-4.35-4.35"/>
               </svg>
@@ -99,7 +110,7 @@ export default function Header() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <nav className="nav-mobile">
+        <nav id={mobileNavId} className="nav-mobile" aria-label="Мобильная навигация">
           {navItems.map((item) => (
             <Link
               key={item.href}

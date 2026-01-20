@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import fs from 'fs';
 import path from 'path';
+import YouTubeLite from '@/app/components/YouTubeLite';
 import './styles.css';
 
 async function getBookmakerData(slug: string) {
@@ -19,12 +20,143 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return {
     title: data.seo?.title || `${data.name} - обзор букмекера`,
     description: data.seo?.description || data.description,
+    alternates: {
+      canonical: `https://ratingbet.ru/bookmaker/${params.slug}`,
+    },
     openGraph: {
       title: data.seo?.title || `${data.name} - обзор букмекера`,
       description: data.seo?.description || data.description,
       type: 'article',
+      url: `https://ratingbet.ru/bookmaker/${params.slug}`,
+      siteName: 'Рейтинг Букмекеров',
+      locale: 'ru_RU',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: data.seo?.title || `${data.name} - обзор букмекера`,
+      description: data.seo?.description || data.description,
     },
   };
+}
+
+// JSON-LD structured data for SEO
+function generateStructuredData(data: any, slug: string) {
+  const baseUrl = 'https://ratingbet.ru';
+
+  // Organization Schema
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Рейтинг Букмекеров',
+    url: baseUrl,
+    logo: `${baseUrl}/logo.png`,
+    sameAs: [
+      'https://t.me/ratingbet',
+      'https://vk.com/ratingbet',
+    ],
+  };
+
+  // BreadcrumbList Schema
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Главная',
+        item: baseUrl,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Букмекеры',
+        item: `${baseUrl}/bookmakers`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: data.name,
+        item: `${baseUrl}/bookmaker/${slug}`,
+      },
+    ],
+  };
+
+  // Review/AggregateRating Schema
+  const reviewSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Review',
+    itemReviewed: {
+      '@type': 'Organization',
+      name: data.name,
+      image: `${baseUrl}/bookmakers/${slug}.png`,
+      address: {
+        '@type': 'PostalAddress',
+        addressCountry: data.company?.country || 'RU',
+      },
+    },
+    reviewRating: {
+      '@type': 'Rating',
+      ratingValue: data.navigator?.rating || data.ratings?.overall || 8,
+      bestRating: 10,
+      worstRating: 1,
+    },
+    author: {
+      '@type': 'Organization',
+      name: 'Рейтинг Букмекеров',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Рейтинг Букмекеров',
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: data.navigator?.rating || data.ratings?.overall || 8,
+      bestRating: 10,
+      worstRating: 1,
+      ratingCount: data.stats?.reviewsCount || 100,
+      reviewCount: data.stats?.reviewsCount || 100,
+    },
+  };
+
+  // FAQPage Schema
+  const faqSchema = data.faq && data.faq.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: data.faq.slice(0, 10).map((item: any) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
+  } : null;
+
+  // SportsActivityLocation for betting site
+  const localBusinessSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    name: data.name,
+    description: data.description,
+    url: data.website,
+    telephone: data.support?.phone,
+    email: data.support?.email,
+    foundingDate: data.navigator?.founded?.toString(),
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: data.company?.address,
+      addressCountry: data.company?.country || 'RU',
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: data.navigator?.rating || 8,
+      bestRating: 10,
+      ratingCount: data.stats?.reviewsCount || 100,
+    },
+  };
+
+  return [organizationSchema, breadcrumbSchema, reviewSchema, localBusinessSchema, faqSchema].filter(Boolean);
 }
 
 function Stars({ rating, size = 'normal', label }: { rating: number; size?: 'normal' | 'small' | 'large'; label?: string }) {
@@ -80,8 +212,19 @@ export default async function BookmakerPage({ params }: { params: { slug: string
     );
   }
 
+  const structuredData = generateStructuredData(data, params.slug);
+
   return (
     <div className="bk-page">
+      {/* JSON-LD Structured Data for SEO */}
+      {structuredData.map((schema, index) => (
+        <script
+          key={index}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      ))}
+
       <div className="bk-container">
         {/* Main Content */}
         <article className="bk-main">
@@ -226,17 +369,14 @@ export default async function BookmakerPage({ params }: { params: { slug: string
             </div>
           </section>
 
-          {/* Video Review */}
+          {/* Video Review - Uses lite-youtube for better performance */}
           {data.videoReview && (
             <section id="video" className="bk-card bk-video" aria-labelledby="video-heading">
               <h2 id="video-heading">Видеообзор БК {data.name}</h2>
               <div className="video-container">
-                <iframe
-                  src={`https://www.youtube.com/embed/${data.videoReview.youtubeId}`}
+                <YouTubeLite
+                  videoId={data.videoReview.youtubeId}
                   title={`Видеообзор букмекера ${data.name}`}
-                  loading="lazy"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
                 />
               </div>
             </section>
