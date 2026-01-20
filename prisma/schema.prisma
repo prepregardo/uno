@@ -1,0 +1,430 @@
+// Prisma Schema for Scalable Bookmaker Review Site
+// Supports 500K+ pages and 3M+ monthly users
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// BOOKMAKERS
+// ============================================
+
+model Bookmaker {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?  @db.Text
+  website     String?
+  logo        String?
+  status      BookmakerStatus @default(ACTIVE)
+
+  // Ratings
+  rating          Float    @default(0)
+  ratingLive      Float?
+  ratingLine      Float?
+  ratingOdds      Float?
+  ratingBonus     Float?
+  ratingSupport   Float?
+  ratingPayments  Float?
+  ratingMobile    Float?
+
+  // Stats
+  reviewsCount    Int      @default(0)
+  complaintsCount Int      @default(0)
+  questionsCount  Int      @default(0)
+  viewsCount      Int      @default(0)
+
+  // Navigator info
+  founded         Int?
+  minDeposit      Int?
+  minWithdraw     Int?
+  bonus           String?
+  license         String?
+
+  // Company info
+  companyName     String?
+  companyAddress  String?
+  companyCountry  String?
+
+  // Support
+  supportEmail    String?
+  supportPhone    String?
+  supportChat     Boolean  @default(false)
+
+  // Content
+  videoYoutubeId  String?
+
+  // SEO
+  seoTitle        String?
+  seoDescription  String?  @db.Text
+  seoKeywords     String?
+
+  // Relations
+  reviews         Review[]
+  bonuses         Bonus[]
+  complaints      Complaint[]
+  questions       Question[]
+  payments        BookmakerPayment[]
+  apps            BookmakerApp[]
+  faq             FAQ[]
+  pros            BookmakerPro[]
+  cons            BookmakerCon[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([status])
+  @@index([rating])
+  @@index([reviewsCount])
+  @@index([createdAt])
+}
+
+enum BookmakerStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  PENDING
+}
+
+model BookmakerPro {
+  id          String     @id @default(cuid())
+  bookmaker   Bookmaker  @relation(fields: [bookmakerId], references: [id], onDelete: Cascade)
+  bookmakerId String
+  text        String
+  order       Int        @default(0)
+
+  @@index([bookmakerId])
+}
+
+model BookmakerCon {
+  id          String     @id @default(cuid())
+  bookmaker   Bookmaker  @relation(fields: [bookmakerId], references: [id], onDelete: Cascade)
+  bookmakerId String
+  text        String
+  order       Int        @default(0)
+
+  @@index([bookmakerId])
+}
+
+model BookmakerApp {
+  id          String     @id @default(cuid())
+  bookmaker   Bookmaker  @relation(fields: [bookmakerId], references: [id], onDelete: Cascade)
+  bookmakerId String
+  platform    AppPlatform
+  url         String?
+  version     String?
+  size        String?
+  rating      Float?
+
+  @@index([bookmakerId])
+}
+
+enum AppPlatform {
+  IOS
+  ANDROID
+  WINDOWS
+  MACOS
+}
+
+model BookmakerPayment {
+  id          String        @id @default(cuid())
+  bookmaker   Bookmaker     @relation(fields: [bookmakerId], references: [id], onDelete: Cascade)
+  bookmakerId String
+  payment     PaymentMethod @relation(fields: [paymentId], references: [id])
+  paymentId   String
+  depositMin  Int?
+  depositMax  Int?
+  withdrawMin Int?
+  withdrawMax Int?
+  depositTime String?
+  withdrawTime String?
+
+  @@unique([bookmakerId, paymentId])
+  @@index([bookmakerId])
+}
+
+// ============================================
+// REVIEWS & COMPLAINTS
+// ============================================
+
+model Review {
+  id          String     @id @default(cuid())
+  bookmaker   Bookmaker  @relation(fields: [bookmakerId], references: [id], onDelete: Cascade)
+  bookmakerId String
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId      String?
+
+  authorName  String
+  authorAvatar String?
+  rating      Int        // 1-5
+  title       String?
+  content     String     @db.Text
+  pros        String?    @db.Text
+  cons        String?    @db.Text
+
+  isVerified  Boolean    @default(false)
+  isModerated Boolean    @default(false)
+  status      ReviewStatus @default(PENDING)
+
+  likesCount  Int        @default(0)
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([bookmakerId])
+  @@index([userId])
+  @@index([status])
+  @@index([rating])
+  @@index([createdAt])
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SPAM
+}
+
+model Complaint {
+  id          String     @id @default(cuid())
+  bookmaker   Bookmaker  @relation(fields: [bookmakerId], references: [id], onDelete: Cascade)
+  bookmakerId String
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId      String?
+
+  authorName  String
+  title       String
+  content     String     @db.Text
+  amount      Int?       // сумма претензии
+
+  status      ComplaintStatus @default(OPEN)
+  resolution  String?    @db.Text
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  resolvedAt  DateTime?
+
+  @@index([bookmakerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+  CLOSED
+}
+
+model Question {
+  id          String     @id @default(cuid())
+  bookmaker   Bookmaker  @relation(fields: [bookmakerId], references: [id], onDelete: Cascade)
+  bookmakerId String
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId      String?
+
+  authorName  String
+  content     String     @db.Text
+  answer      String?    @db.Text
+
+  isAnswered  Boolean    @default(false)
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  answeredAt  DateTime?
+
+  @@index([bookmakerId])
+  @@index([isAnswered])
+  @@index([createdAt])
+}
+
+model FAQ {
+  id          String     @id @default(cuid())
+  bookmaker   Bookmaker  @relation(fields: [bookmakerId], references: [id], onDelete: Cascade)
+  bookmakerId String
+
+  question    String
+  answer      String     @db.Text
+  order       Int        @default(0)
+
+  @@index([bookmakerId])
+}
+
+// ============================================
+// BONUSES
+// ============================================
+
+model Bonus {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  bookmaker   Bookmaker  @relation(fields: [bookmakerId], references: [id], onDelete: Cascade)
+  bookmakerId String
+
+  title       String
+  description String     @db.Text
+  code        String?
+  amount      String?    // "15000 руб" or "100%"
+  type        BonusType
+
+  minDeposit  Int?
+  wager       Float?     // x5, x10, etc
+  maxBet      Int?
+
+  validUntil  DateTime?
+  isActive    Boolean    @default(true)
+
+  // SEO
+  seoTitle       String?
+  seoDescription String?  @db.Text
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([bookmakerId])
+  @@index([type])
+  @@index([isActive])
+  @@index([slug])
+}
+
+enum BonusType {
+  WELCOME
+  DEPOSIT
+  FREEBET
+  CASHBACK
+  PROMO
+  VIP
+}
+
+// ============================================
+// PAYMENTS
+// ============================================
+
+model PaymentMethod {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  name        String
+  icon        String?
+  type        PaymentType
+  isActive    Boolean    @default(true)
+
+  bookmakers  BookmakerPayment[]
+
+  @@index([type])
+  @@index([isActive])
+}
+
+enum PaymentType {
+  CARD
+  EWALLET
+  CRYPTO
+  BANK
+  MOBILE
+}
+
+// ============================================
+// USERS
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  avatar        String?
+  password      String?
+  role          UserRole  @default(USER)
+
+  isVerified    Boolean   @default(false)
+  isBanned      Boolean   @default(false)
+
+  reviews       Review[]
+  complaints    Complaint[]
+  questions     Question[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+
+  @@index([email])
+  @@index([role])
+}
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+  SUPERADMIN
+}
+
+// ============================================
+// CONTENT & SEO
+// ============================================
+
+model Page {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  title       String
+  content     String     @db.Text
+
+  // SEO
+  seoTitle       String?
+  seoDescription String?  @db.Text
+  seoKeywords    String?
+
+  isPublished Boolean    @default(false)
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  publishedAt DateTime?
+
+  @@index([slug])
+  @@index([isPublished])
+}
+
+model Article {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  title       String
+  excerpt     String?    @db.Text
+  content     String     @db.Text
+  image       String?
+
+  category    ArticleCategory @relation(fields: [categoryId], references: [id])
+  categoryId  String
+
+  author      String?
+
+  // SEO
+  seoTitle       String?
+  seoDescription String?  @db.Text
+
+  viewsCount  Int        @default(0)
+  isPublished Boolean    @default(false)
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  publishedAt DateTime?
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([isPublished])
+  @@index([createdAt])
+}
+
+model ArticleCategory {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  name        String
+  description String?
+
+  articles    Article[]
+
+  @@index([slug])
+}

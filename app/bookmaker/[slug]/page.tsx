@@ -1,21 +1,20 @@
 import { Metadata } from 'next';
-import fs from 'fs';
-import path from 'path';
+import { getBookmaker, getBookmakerSlugs } from '@/lib/data';
 import YouTubeLite from '@/app/components/YouTubeLite';
 import './styles.css';
 
-async function getBookmakerData(slug: string) {
-  const filePath = path.join(process.cwd(), 'content', `${slug}-full.json`);
-  try {
-    const content = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(content);
-  } catch {
-    return null;
-  }
+// ISR: Revalidate every hour (3600 seconds)
+// Pages will be regenerated in the background when requested
+export const revalidate = 3600;
+
+// Generate static params for all bookmakers at build time
+export async function generateStaticParams() {
+  const slugs = await getBookmakerSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const data = await getBookmakerData(params.slug);
+  const data = await getBookmaker(params.slug);
   if (!data) return { title: 'Букмекер не найден' };
   return {
     title: data.seo?.title || `${data.name} - обзор букмекера`,
@@ -199,7 +198,7 @@ function RatingBar({ value, maxValue = 10, label }: { value: number; maxValue?: 
 }
 
 export default async function BookmakerPage({ params }: { params: { slug: string } }) {
-  const data = await getBookmakerData(params.slug);
+  const data = await getBookmaker(params.slug);
 
   if (!data) {
     return (
