@@ -1,179 +1,163 @@
 import Link from 'next/link';
-import { getAllBookmakers } from '@/lib/content';
+import fs from 'fs';
+import path from 'path';
 import './home.css';
 
 export const revalidate = 60;
 
+// Загрузка списка букмекеров
+function getBookmakers() {
+  try {
+    const filePath = path.join(process.cwd(), 'content', 'bookmakers.json');
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const data = JSON.parse(content);
+    return data.bookmakers || [];
+  } catch {
+    return [];
+  }
+}
+
 export default function HomePage() {
-  const bookmakers = getAllBookmakers();
+  const bookmakers = getBookmakers();
   const topBookmakers = bookmakers.slice(0, 5);
 
-  const totalBookmakers = bookmakers.length;
-  const avgRating = (bookmakers.reduce((sum, b) => sum + b.rating, 0) / bookmakers.length).toFixed(1);
-  const countriesCount = new Set(bookmakers.map(b => b.country)).size;
-
   return (
-    <div className="container">
+    <div className="page-container">
       {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-content">
-          <div className="hero-badge">Крупнейший ресурс о ставках</div>
+      <section className="home-hero">
+        <div className="home-hero-content">
           <h1>Рейтинг Букмекеров</h1>
-          <p className="subtitle">
+          <p className="home-hero-subtitle">
             Честные обзоры, объективные рейтинги и актуальные данные.
-            <br />
             Создано игроками для игроков.
           </p>
-          <div className="hero-stats">
-            <div className="hero-stat">
-              <span className="hero-stat-value">{totalBookmakers}</span>
-              <span className="hero-stat-label">букмекеров</span>
+          <div className="home-hero-stats">
+            <div className="home-stat">
+              <span className="home-stat-value">{bookmakers.length}</span>
+              <span className="home-stat-label">букмекеров</span>
             </div>
-            <div className="hero-stat-divider" />
-            <div className="hero-stat">
-              <span className="hero-stat-value">{countriesCount}</span>
-              <span className="hero-stat-label">стран</span>
+            <div className="home-stat">
+              <span className="home-stat-value">5000+</span>
+              <span className="home-stat-label">отзывов</span>
             </div>
-            <div className="hero-stat-divider" />
-            <div className="hero-stat">
-              <span className="hero-stat-value">{avgRating}</span>
-              <span className="hero-stat-label">средний рейтинг</span>
+            <div className="home-stat">
+              <span className="home-stat-value">100%</span>
+              <span className="home-stat-label">честность</span>
             </div>
           </div>
-          <div className="hero-buttons">
-            <Link href="/bookmakers" className="btn btn-primary">
-              Смотреть рейтинг
-            </Link>
-          </div>
+          <Link href="/bookmakers" className="btn btn-primary btn-lg">
+            Смотреть рейтинг
+          </Link>
         </div>
       </section>
 
-      {/* Main Navigation Cards */}
-      <section className="nav-section">
-        <h2>Разделы сайта</h2>
-        <div className="nav-grid">
-          <Link href="/bookmakers" className="nav-card nav-card-featured">
-            <div className="nav-card-icon">🏆</div>
-            <div className="nav-card-content">
+      {/* Navigation Cards */}
+      <section className="home-nav">
+        <h2 className="section-title">Разделы сайта</h2>
+        <div className="home-nav-grid">
+          <Link href="/bookmakers" className="home-nav-card featured">
+            <span className="home-nav-icon">🏆</span>
+            <div className="home-nav-content">
               <h3>Рейтинг букмекеров</h3>
-              <p>
-                {totalBookmakers} букмекерских контор с подробными обзорами,
-                фильтрами и сортировкой по рейтингу, марже и другим параметрам
-              </p>
-              <div className="nav-card-tags">
-                <span className="home-tag">Фильтры</span>
-                <span className="home-tag">Сортировка</span>
-                <span className="home-tag">Сравнение</span>
-              </div>
+              <p>{bookmakers.length} букмекерских контор с подробными обзорами и фильтрами</p>
             </div>
-            <div className="nav-card-arrow">→</div>
+            <span className="home-nav-arrow">→</span>
           </Link>
 
-          <div className="nav-card nav-card-coming">
-            <div className="nav-card-icon">📊</div>
-            <div className="nav-card-content">
+          <div className="home-nav-card disabled">
+            <span className="home-nav-icon">📊</span>
+            <div className="home-nav-content">
               <h3>Анализ маржи</h3>
-              <p>
-                Сравнение коэффициентов и маржи букмекеров в реальном времени.
-                Данные обновляются автоматически.
-              </p>
-              <span className="coming-badge">Скоро</span>
+              <p>Сравнение коэффициентов в реальном времени</p>
+              <span className="coming-soon">Скоро</span>
             </div>
           </div>
 
-          <div className="nav-card nav-card-coming">
-            <div className="nav-card-icon">🎁</div>
-            <div className="nav-card-content">
+          <div className="home-nav-card disabled">
+            <span className="home-nav-icon">🎁</span>
+            <div className="home-nav-content">
               <h3>Бонусы и акции</h3>
-              <p>
-                Актуальные бонусы, фрибеты и промокоды от всех букмекеров.
-                Только проверенные предложения.
-              </p>
-              <span className="coming-badge">Скоро</span>
+              <p>Актуальные бонусы и промокоды</p>
+              <span className="coming-soon">Скоро</span>
             </div>
           </div>
 
-          <div className="nav-card nav-card-coming">
-            <div className="nav-card-icon">📚</div>
-            <div className="nav-card-content">
+          <div className="home-nav-card disabled">
+            <span className="home-nav-icon">📚</span>
+            <div className="home-nav-content">
               <h3>База знаний</h3>
-              <p>
-                Учебники, энциклопедия и глоссарий для начинающих и опытных
-                игроков. Стратегии и советы.
-              </p>
-              <span className="coming-badge">Скоро</span>
+              <p>Учебники и стратегии</p>
+              <span className="coming-soon">Скоро</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Top Bookmakers Preview */}
-      <section className="top-section">
-        <div className="section-header">
-          <h2>Топ букмекеров</h2>
-          <Link href="/bookmakers" className="section-link">
-            Все букмекеры →
-          </Link>
-        </div>
-        <div className="top-list">
-          {topBookmakers.map((bk, index) => (
-            <Link href={`/bookmakers/${bk.slug}`} key={bk.slug} className="top-card">
-              <div className="top-rank">#{index + 1}</div>
-              <div className="top-logo">{bk.logo}</div>
-              <div className="top-info">
-                <h4>{bk.name}</h4>
-                <p>{bk.country}</p>
-              </div>
-              <div className="top-stats">
-                <div className="top-stat">
-                  <span className="top-stat-value rating">{bk.rating}</span>
-                  <span className="top-stat-label">Рейтинг</span>
-                </div>
-                <div className="top-stat">
-                  <span className="top-stat-value margin">{bk.avgMargin}%</span>
-                  <span className="top-stat-label">Маржа</span>
-                </div>
-              </div>
-              <div className="top-arrow">→</div>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* Top Bookmakers */}
+      {topBookmakers.length > 0 && (
+        <section className="home-top">
+          <div className="section-header">
+            <h2 className="section-title">Топ букмекеров</h2>
+            <Link href="/bookmakers" className="section-link">Все букмекеры →</Link>
+          </div>
 
-      {/* Brand Values */}
-      <section className="values-section">
-        <h2>Наши принципы</h2>
-        <div className="values-grid">
-          <div className="value-card">
-            <div className="value-icon">✓</div>
+          <div className="home-top-list">
+            {topBookmakers.map((bk: any, idx: number) => (
+              <Link href={`/bookmaker/${bk.slug}`} key={bk.slug} className="home-top-card">
+                <span className="home-top-rank">#{idx + 1}</span>
+                <span className="home-top-logo">{bk.logo}</span>
+                <div className="home-top-info">
+                  <h4>{bk.name}</h4>
+                  <span className="home-top-country">{bk.country}</span>
+                </div>
+                <div className="home-top-stats">
+                  <div className="home-top-stat">
+                    <span className="home-top-stat-value">{bk.rating}</span>
+                    <span className="home-top-stat-label">Рейтинг</span>
+                  </div>
+                  <div className="home-top-stat">
+                    <span className="home-top-stat-value">{bk.avgMargin}%</span>
+                    <span className="home-top-stat-label">Маржа</span>
+                  </div>
+                </div>
+                <span className="home-top-arrow">→</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Values */}
+      <section className="home-values">
+        <h2 className="section-title">Наши принципы</h2>
+        <div className="home-values-grid">
+          <div className="home-value-card">
+            <span className="home-value-icon">✓</span>
             <h4>Честность</h4>
-            <p>Мы говорим правду и не приукрашиваем. Все оценки прозрачны.</p>
+            <p>Мы говорим правду и не приукрашиваем</p>
           </div>
-          <div className="value-card">
-            <div className="value-icon">📐</div>
+          <div className="home-value-card">
+            <span className="home-value-icon">📐</span>
             <h4>Объективность</h4>
-            <p>Методология опубликована и доступна. Никаких субъективных суждений.</p>
+            <p>Методология опубликована и доступна</p>
           </div>
-          <div className="value-card">
-            <div className="value-icon">📈</div>
+          <div className="home-value-card">
+            <span className="home-value-icon">📈</span>
             <h4>Данные</h4>
-            <p>Каждая оценка основана на реальных данных и метриках.</p>
+            <p>Каждая оценка основана на метриках</p>
           </div>
-          <div className="value-card">
-            <div className="value-icon">🎮</div>
+          <div className="home-value-card">
+            <span className="home-value-icon">🎮</span>
             <h4>Для игроков</h4>
-            <p>Сделано игроками для игроков. Мы понимаем ваши потребности.</p>
+            <p>Сделано игроками для игроков</p>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="footer">
-        <p>
-          Рейтинг Букмекеров — честные обзоры и объективные оценки
-          <br />
-          © {new Date().getFullYear()} РБ. Все права защищены.
-        </p>
+      <footer className="home-footer">
+        <p>РБ — Рейтинг Букмекеров. Честные обзоры и объективные оценки.</p>
+        <p className="home-footer-copy">© {new Date().getFullYear()} Все права защищены.</p>
       </footer>
     </div>
   );

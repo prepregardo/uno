@@ -1,10 +1,11 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import Providers from './providers';
+import Header from './components/Header';
 
 export const metadata: Metadata = {
-  title: 'Winline Review - Автоматический обзор букмекера',
-  description: 'Автоматизированный обзор букмекерской компании Winline с реальными данными',
+  title: 'РБ - Рейтинг Букмекеров | Честные обзоры и отзывы',
+  description: 'Крупнейший рейтинг букмекерских контор. Честные обзоры, отзывы игроков, бонусы и промокоды.',
 };
 
 export default function RootLayout({
@@ -15,7 +16,10 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          <Header />
+          <main>{children}</main>
+        </Providers>
       </body>
     </html>
   );
